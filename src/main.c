@@ -12,15 +12,23 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <time.h>
+#include <math.h>
 #include <sys/ioctl.h>
 
 #define FRAME_MS 33
+#define DT       0.033
 
 #define KEY_UP    1001
 #define KEY_DOWN  1002
 #define KEY_LEFT  1003
 #define KEY_RIGHT 1004
 #define KEY_ESC   27
+
+#define PLAYER_ACCEL     26.0
+#define PLAYER_MAX_SPEED 45.0
+#define PLAYER_DRAG      0.9
+
+#define THRUST_MEMORY 0.12
 
 static int W = 80;
 static int H = 24;
@@ -38,8 +46,9 @@ typedef struct {
 static Star stars[MAX_STARS];
 static int star_count = 0;
 
-static int player_x;
-static int player_y;
+static double player_x, player_y;
+static double player_vx, player_vy;
+static double thrust_t[4];
 
 static void on_signal(int sig)
 {
@@ -182,7 +191,7 @@ static void draw_stars(char *frame)
     }
 }
 
-static void draw_rocket(char *frame, int cx, int cy)
+static void draw_rocket(char *frame, int cx, int cy, double ax, double ay)
 {
     static const char *sprite[] = {
         "   __   ",
@@ -202,26 +211,109 @@ static void draw_rocket(char *frame, int cx, int cy)
                 frame[y * W + x] = ch;
         }
     }
+
+    if (ax < -0.1 && cx - 5 >= 0 && cy >= 0 && cy < H - 1)
+        frame[cy * W + cx - 5] = '*';
+    if (ax > 0.1 && cx + 5 < W && cy >= 0 && cy < H - 1)
+        frame[cy * W + cx + 5] = '*';
+    if (ay < -0.1 && cx >= 0 && cx < W && cy - 3 >= 0)
+        frame[(cy - 3) * W + cx] = '*';
+    if (ay > 0.1 && cx >= 0 && cx < W && cy + 2 < H - 1)
+        frame[(cy + 2) * W + cx] = '*';
+}
+
+static void update_player(void)
+{
+    double ax = 0.0;
+    double ay = 0.0;
+    double len;
+    double speed;
+    int i;
+
+    if (thrust_t[0] > 0.0)
+        ay -= 1.0;
+    if (thrust_t[1] > 0.0)
+        ay += 1.0;
+    if (thrust_t[2] > 0.0)
+        ax -= 1.0;
+    if (thrust_t[3] > 0.0)
+        ax += 1.0;
+
+    len = sqrt(ax * ax + ay * ay);
+    if (len > 0.0) {
+        ax /= len;
+        ay /= len;
+    }
+
+    player_vx += ax * PLAYER_ACCEL * DT;
+    player_vy += ay * PLAYER_ACCEL * DT;
+
+    player_vx -= player_vx * PLAYER_DRAG * DT;
+    player_vy -= player_vy * PLAYER_DRAG * DT;
+
+    speed = sqrt(player_vx * player_vx + player_vy * player_vy);
+    if (speed > PLAYER_MAX_SPEED) {
+        player_vx = player_vx / speed * PLAYER_MAX_SPEED;
+        player_vy = player_vy / speed * PLAYER_MAX_SPEED;
+    }
+
+    player_x += player_vx * DT;
+    player_y += player_vy * DT;
+
+    if (player_x < 4.0) {
+        player_x = 4.0;
+        player_vx = 0.0;
+    }
+    if (player_x > W - 5.0) {
+        player_x = W - 5.0;
+        player_vx = 0.0;
+    }
+    if (player_y < 2.0) {
+        player_y = 2.0;
+        player_vy = 0.0;
+    }
+    if (player_y > H - 3.0) {
+        player_y = H - 3.0;
+        player_vy = 0.0;
+    }
+
+    for (i = 0; i < 4; i++) {
+        if (thrust_t[i] > 0.0)
+            thrust_t[i] -= DT;
+    }
 }
 
 static void draw_frame(void)
 {
     char *frame;
     int x, y;
+    double last_ax = 0.0;
+    double last_ay = 0.0;
+
+    if (thrust_t[0] > 0.0)
+        last_ay -= 1.0;
+    if (thrust_t[1] > 0.0)
+        last_ay += 1.0;
+    if (thrust_t[2] > 0.0)
+        last_ax -= 1.0;
+    if (thrust_t[3] > 0.0)
+        last_ax += 1.0;
 
     frame = malloc((size_t)W * (size_t)H);
 
     memset(frame, ' ', (size_t)W * (size_t)H);
     draw_stars(frame);
-    draw_rocket(frame, player_x, player_y);
+    draw_rocket(frame, (int)(player_x + 0.5), (int)(player_y + 0.5), last_ax, last_ay);
 
     printf("\033[H");
     for (y = 0; y < H - 1; y++) {
         for (x = 0; x < W; x++)
             putchar(frame[y * W + x]);
     }
+
     printf("\033[%d;1H", H);
-    printf("ARROWS / WASD  move     Q  quit");
+    printf("ARROWS / WASD  thrust     Q  quit     VEL %5.1f",
+           sqrt(player_vx * player_vx + player_vy * player_vy));
     fflush(stdout);
 
     free(frame);
@@ -237,8 +329,10 @@ int main(void)
     term_init();
     init_stars();
 
-    player_x = W / 2;
-    player_y = (H - 1) / 2;
+    player_x = W / 2.0;
+    player_y = (H - 1) / 2.0;
+    player_vx = 0.0;
+    player_vy = 0.0;
 
     while (running && !stop_requested) {
         long frame_start = now_ms();
@@ -250,24 +344,16 @@ int main(void)
                 running = 0;
 
             if (key == KEY_UP || key == 'w' || key == 'W')
-                player_y--;
+                thrust_t[0] = THRUST_MEMORY;
             if (key == KEY_DOWN || key == 's' || key == 'S')
-                player_y++;
+                thrust_t[1] = THRUST_MEMORY;
             if (key == KEY_LEFT || key == 'a' || key == 'A')
-                player_x--;
+                thrust_t[2] = THRUST_MEMORY;
             if (key == KEY_RIGHT || key == 'd' || key == 'D')
-                player_x++;
+                thrust_t[3] = THRUST_MEMORY;
         }
 
-        if (player_x < 4)
-            player_x = 4;
-        if (player_x > W - 5)
-            player_x = W - 5;
-        if (player_y < 2)
-            player_y = 2;
-        if (player_y > H - 3)
-            player_y = H - 3;
-
+        update_player();
         draw_frame();
 
         elapsed = now_ms() - frame_start;
