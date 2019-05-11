@@ -34,6 +34,7 @@
 #define MARS_RADIUS  4.5
 #define MARS_ORBIT   16.5
 #define STAR_SPAN    2400.0
+#define GRAVITY_MU   1500.0
 
 static int W = 80;
 static int H = 24;
@@ -292,10 +293,57 @@ static void draw_rocket(char *frame, int cx, int cy, double ax, double ay)
         frame[(cy - 3) * W + cx] = '*';
 }
 
+static void add_planet_gravity(double cx, double cy, double radius, double *ax, double *ay)
+{
+    double dx = cx - player_x;
+    double dy = cy - player_y;
+    double dist2 = dx * dx + dy * dy;
+    double min_dist = radius + 1.0;
+    double dist;
+    double pull;
+
+    if (dist2 < min_dist * min_dist)
+        dist2 = min_dist * min_dist;
+
+    dist = sqrt(dist2);
+    pull = GRAVITY_MU / dist2;
+
+    *ax += dx / dist * pull;
+    *ay += dy / dist * pull;
+}
+
+static void bounce_off_planet(double cx, double cy, double radius)
+{
+    double dx = player_x - cx;
+    double dy = player_y - cy;
+    double dist = sqrt(dx * dx + dy * dy);
+    double nx, ny, vn;
+
+    if (dist >= radius || dist < 0.001)
+        return;
+
+    nx = dx / dist;
+    ny = dy / dist;
+
+    player_x = cx + nx * radius;
+    player_y = cy + ny * radius;
+
+    vn = player_vx * nx + player_vy * ny;
+    if (vn < 0.0) {
+        player_vx -= 2.0 * vn * nx;
+        player_vy -= 2.0 * vn * ny;
+    }
+
+    player_vx *= 0.45;
+    player_vy *= 0.45;
+}
+
 static void update_player(void)
 {
     double ax = 0.0;
     double ay = 0.0;
+    double gx = 0.0;
+    double gy = 0.0;
     double len;
     double speed;
     double target;
@@ -316,8 +364,11 @@ static void update_player(void)
         ay /= len;
     }
 
-    player_vx += ax * PLAYER_ACCEL * DT;
-    player_vy += ay * PLAYER_ACCEL * DT;
+    add_planet_gravity(0.0, world_mid(), EARTH_RADIUS, &gx, &gy);
+    add_planet_gravity(WORLD_LENGTH, world_mid(), MARS_RADIUS, &gx, &gy);
+
+    player_vx += (ax * PLAYER_ACCEL + gx) * DT;
+    player_vy += (ay * PLAYER_ACCEL + gy) * DT;
 
     player_vx -= player_vx * PLAYER_DRAG * DT;
     player_vy -= player_vy * PLAYER_DRAG * DT;
@@ -331,25 +382,22 @@ static void update_player(void)
     player_x += player_vx * DT;
     player_y += player_vy * DT;
 
-    if (player_x < EARTH_RADIUS + 2.0) {
-        player_x = EARTH_RADIUS + 2.0;
-        if (player_vx < 0.0)
-            player_vx = 0.0;
-    }
+    bounce_off_planet(0.0, world_mid(), EARTH_RADIUS + 1.5);
+
     if (player_x > WORLD_LENGTH + 40.0) {
         player_x = WORLD_LENGTH + 40.0;
         if (player_vx > 0.0)
-            player_vx = 0.0;
+            player_vx = -player_vx * 0.4;
     }
     if (player_y < 2.0) {
         player_y = 2.0;
         if (player_vy < 0.0)
-            player_vy = 0.0;
+            player_vy = -player_vy * 0.5;
     }
     if (player_y > play_height() - 2.0) {
         player_y = play_height() - 2.0;
         if (player_vy > 0.0)
-            player_vy = 0.0;
+            player_vy = -player_vy * 0.5;
     }
 
     for (i = 0; i < 4; i++) {
