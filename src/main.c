@@ -35,6 +35,8 @@
 #define MARS_ORBIT   16.5
 #define STAR_SPAN    2400.0
 #define GRAVITY_MU   1500.0
+#define FUEL_MAX     100.0
+#define FUEL_BURN    1.8
 
 static int W = 80;
 static int H = 24;
@@ -57,16 +59,17 @@ static double player_x, player_y;
 static double player_vx, player_vy;
 static double thrust_t[4];
 static double camera_x;
+static double fuel;
 static int mission_won = 0;
 
 static int play_height(void)
 {
-    return H - 1;
+    return H - 2;
 }
 
 static double world_mid(void)
 {
-    return (H - 1) / 2.0;
+    return (H - 2) / 2.0;
 }
 
 static void on_signal(int sig)
@@ -367,6 +370,18 @@ static void update_player(void)
     add_planet_gravity(0.0, world_mid(), EARTH_RADIUS, &gx, &gy);
     add_planet_gravity(WORLD_LENGTH, world_mid(), MARS_RADIUS, &gx, &gy);
 
+    if (len > 0.0 && fuel <= 0.0) {
+        ax = 0.0;
+        ay = 0.0;
+        len = 0.0;
+    }
+
+    if (len > 0.0) {
+        fuel -= FUEL_BURN * DT;
+        if (fuel < 0.0)
+            fuel = 0.0;
+    }
+
     player_vx += (ax * PLAYER_ACCEL + gx) * DT;
     player_vy += (ay * PLAYER_ACCEL + gy) * DT;
 
@@ -460,14 +475,24 @@ static void draw_frame(void)
             putchar(frame[y * W + x]);
     }
 
-    printf("\033[%d;1H", H);
-    if (mission_won) {
-        printf("MARS REACHED!  Press R to fly again, Q to quit.                          ");
-    } else {
-        printf("DIST %4.0f / %.0f     VEL %4.1f     R restart     Q quit            ",
-               player_x, WORLD_LENGTH,
-               sqrt(player_vx * player_vx + player_vy * player_vy));
+    printf("\033[%d;1H", H - 1);
+    {
+        int bars = (int)(fuel / FUEL_MAX * 10.0 + 0.5);
+        int i;
+
+        if (mission_won) {
+            printf("MARS REACHED!  Press R to fly again, Q to quit.                          ");
+        } else {
+            printf("FUEL [");
+            for (i = 0; i < 10; i++)
+                putchar(i < bars ? '#' : '-');
+            printf("] %3.0f%%     VEL %4.1f     DIST %4.0f / %.0f          ",
+                   fuel, sqrt(player_vx * player_vx + player_vy * player_vy),
+                   player_x, WORLD_LENGTH);
+        }
     }
+    printf("\033[%d;1H", H);
+    printf("ARROWS / WASD  thrust     Q  quit                                      ");
     fflush(stdout);
 
     free(frame);
@@ -480,6 +505,7 @@ static void reset_game(void)
     player_vx = 0.0;
     player_vy = 0.0;
     camera_x = player_x - W * 0.35;
+    fuel = FUEL_MAX;
     mission_won = 0;
 }
 
