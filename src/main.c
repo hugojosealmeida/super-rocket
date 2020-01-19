@@ -37,6 +37,9 @@
 #define GRAVITY_MU   1500.0
 #define FUEL_MAX     100.0
 #define FUEL_BURN    1.8
+#define HULL_MAX     100.0
+#define MAX_ASTEROIDS 64
+#define ASTEROID_SPAWN 1.8
 
 static int W = 80;
 static int H = 24;
@@ -55,19 +58,31 @@ typedef struct {
 static Star stars[MAX_STARS];
 static int star_count = 0;
 
+typedef struct {
+    double x;
+    double y;
+    double vx;
+    double vy;
+    int radius;
+    int alive;
+} Asteroid;
+
+static Asteroid asteroids[MAX_ASTEROIDS];
+static double spawn_timer = 3.0;
+
 static double player_x, player_y;
 static double player_vx, player_vy;
 static double thrust_t[4];
 static double camera_x;
 static double fuel;
+static double hull;
 static int mission_won = 0;
+static int game_over = 0;
 
 static int play_height(void)
 {
     return H - 2;
-}
-
-static double world_mid(void)
+}static double world_mid(void)
 {
     return (H - 2) / 2.0;
 }
@@ -437,6 +452,90 @@ static void update_player(void)
     }
 }
 
+static void spawn_asteroid(void)
+{
+    int i;
+    int slot = -1;
+    double x;
+    double y;
+    double dx;
+    double dy;
+    int radius;
+
+    for (i = 0; i < MAX_ASTEROIDS; i++) {
+        if (!asteroids[i].alive) {
+            slot = i;
+            break;
+        }
+    }
+
+    if (slot < 0)
+        return;
+
+    x = camera_x + W + 12.0 + (double)(rand() % 180);
+    y = 3.0 + (double)(rand() % (play_height() - 6));
+    radius = (rand() % 100 < 25) ? 2 : 1;
+
+    dx = x - 0.0;
+    dy = y - world_mid();
+    if (sqrt(dx * dx + dy * dy) < EARTH_RADIUS + radius + 10.0)
+        return;
+
+    dx = x - WORLD_LENGTH;
+    dy = y - world_mid();
+    if (sqrt(dx * dx + dy * dy) < MARS_RADIUS + radius + 10.0)
+        return;
+
+    asteroids[slot].x = x;
+    asteroids[slot].y = y;
+    asteroids[slot].vx = -(3.0 + (double)(rand() % 8));
+    asteroids[slot].vy = ((double)(rand() % 100) - 50.0) / 25.0;
+    asteroids[slot].radius = radius;
+    asteroids[slot].alive = 1;
+}
+
+static void update_asteroids(void)
+{
+    int i;
+
+    spawn_timer -= DT;
+    if (spawn_timer <= 0.0) {
+        spawn_asteroid();
+        spawn_timer = ASTEROID_SPAWN * (0.7 + (double)(rand() % 60) / 100.0);
+    }
+
+    for (i = 0; i < MAX_ASTEROIDS; i++) {
+        Asteroid *a = &asteroids[i];
+        double dx;
+        double dy;
+        double hit_radius;
+
+        if (!a->alive)
+            continue;
+
+        a->x += a->vx * DT;
+        a->y += a->vy * DT;
+
+        if (a->x < camera_x - 80.0 || a->y < -4.0 || a->y > play_height() + 4.0) {
+            a->alive = 0;
+            continue;
+        }
+
+        dx = a->x - player_x;
+        dy = a->y - player_y;
+        hit_radius = a->radius + 1.2;
+
+        if (dx * dx + dy * dy < hit_radius * hit_radius) {
+            a->alive = 0;
+            hull -= (a->radius == 2) ? 40.0 : 24.0;
+            if (hull <= 0.0) {
+                hull = 0.0;
+                game_over = 1;
+            }
+        }
+    }
+}
+
 static void draw_frame(void)
 {
     char *frame;
@@ -466,6 +565,17 @@ static void draw_frame(void)
     draw_disk(frame, mars_screen, world_mid(), MARS_RADIUS, '#', '.', 7);
     draw_label(frame, mars_screen, (int)world_mid() - (int)MARS_RADIUS - 2, "MARS");
 
+    {
+        int i;
+
+        for (i = 0; i < MAX_ASTEROIDS; i++) {
+            if (!asteroids[i].alive)
+                continue;
+            draw_disk(frame, asteroids[i].x - camera_x, asteroids[i].y,
+                      (double)asteroids[i].radius * 1.2, 'O', 'o', i * 13 + 5);
+        }
+    }
+
     draw_rocket(frame, (int)(player_x - camera_x + 0.5), (int)(player_y + 0.5),
                 last_ax, last_ay);
 
@@ -477,22 +587,28 @@ static void draw_frame(void)
 
     printf("\033[%d;1H", H - 1);
     {
-        int bars = (int)(fuel / FUEL_MAX * 10.0 + 0.5);
+        int hull_bars = (int)(hull / HULL_MAX * 10.0 + 0.5);
+        int fuel_bars = (int)(fuel / FUEL_MAX * 10.0 + 0.5);
         int i;
 
-        if (mission_won) {
-            printf("MARS REACHED!  Press R to fly again, Q to quit.                          ");
-        } else {
-            printf("FUEL [");
-            for (i = 0; i < 10; i++)
-                putchar(i < bars ? '#' : '-');
-            printf("] %3.0f%%     VEL %4.1f     DIST %4.0f / %.0f          ",
-                   fuel, sqrt(player_vx * player_vx + player_vy * player_vy),
-                   player_x, WORLD_LENGTH);
-        }
+        printf("HULL [");
+        for (i = 0; i < 10; i++)
+            putchar(i < hull_bars ? '#' : '-');
+        printf("] %3.0f%%   FUEL [", hull);
+        for (i = 0; i < 10; i++)
+            putchar(i < fuel_bars ? '#' : '-');
+        printf("] %3.0f%%   VEL %4.1f     ", fuel,
+               sqrt(player_vx * player_vx + player_vy * player_vy));
     }
     printf("\033[%d;1H", H);
-    printf("ARROWS / WASD  thrust     Q  quit                                      ");
+    if (game_over) {
+        printf("GAME OVER - hull breach.  Press R to restart, Q to quit.               ");
+    } else if (mission_won) {
+        printf("MARS REACHED!  Press R to fly again, Q to quit.                         ");
+    } else {
+        printf("DIST %4.0f / %.0f     ARROWS / WASD thrust     Q quit              ",
+               player_x, WORLD_LENGTH);
+    }
     fflush(stdout);
 
     free(frame);
@@ -500,13 +616,24 @@ static void draw_frame(void)
 
 static void reset_game(void)
 {
+    int i;
+
     player_x = EARTH_RADIUS + 11.0;
     player_y = world_mid();
     player_vx = 0.0;
     player_vy = 0.0;
     camera_x = player_x - W * 0.35;
     fuel = FUEL_MAX;
+    hull = HULL_MAX;
     mission_won = 0;
+    game_over = 0;
+    spawn_timer = 3.0;
+
+    for (i = 0; i < 4; i++)
+        thrust_t[i] = 0.0;
+
+    for (i = 0; i < MAX_ASTEROIDS; i++)
+        asteroids[i].alive = 0;
 }
 
 int main(void)
@@ -529,10 +656,10 @@ int main(void)
         while ((key = read_key()) != 0) {
             if (key == 'q' || key == 'Q' || key == KEY_ESC)
                 running = 0;
-            if ((key == 'r' || key == 'R') && mission_won)
+            if (key == 'r' || key == 'R')
                 reset_game();
 
-            if (!mission_won) {
+            if (!mission_won && !game_over) {
                 if (key == KEY_UP || key == 'w' || key == 'W')
                     thrust_t[0] = THRUST_MEMORY;
                 if (key == KEY_DOWN || key == 's' || key == 'S')
@@ -544,8 +671,10 @@ int main(void)
             }
         }
 
-        if (!mission_won)
+        if (!mission_won && !game_over)
             update_player();
+        if (!mission_won && !game_over)
+            update_asteroids();
 
         draw_frame();
 
