@@ -70,19 +70,30 @@ typedef struct {
 static Asteroid asteroids[MAX_ASTEROIDS];
 static double spawn_timer = 3.0;
 
+typedef enum {
+    STATE_MENU,
+    STATE_PLAYING,
+    STATE_PAUSED,
+    STATE_WON,
+    STATE_DEAD
+} GameState;
+
 static double player_x, player_y;
 static double player_vx, player_vy;
 static double thrust_t[4];
 static double camera_x;
 static double fuel;
 static double hull;
-static int mission_won = 0;
-static int game_over = 0;
+static double mission_time;
+static int score;
+static GameState state = STATE_MENU;
 
 static int play_height(void)
 {
     return H - 2;
-}static double world_mid(void)
+}
+
+static double world_mid(void)
 {
     return (H - 2) / 2.0;
 }
@@ -443,12 +454,19 @@ static void update_player(void)
 
     camera_x += (target - camera_x) * 0.15;
 
-    if (!mission_won) {
+    if (state == STATE_PLAYING) {
         double dx = player_x - WORLD_LENGTH;
         double dy = player_y - world_mid();
 
-        if (sqrt(dx * dx + dy * dy) < MARS_ORBIT)
-            mission_won = 1;
+        if (sqrt(dx * dx + dy * dy) < MARS_ORBIT) {
+            double bonus = 240.0 - mission_time;
+
+            if (bonus < 0.0)
+                bonus = 0.0;
+
+            score = (int)(hull * 8.0 + fuel * 6.0 + bonus * 3.0);
+            state = STATE_WON;
+        }
     }
 }
 
@@ -530,9 +548,109 @@ static void update_asteroids(void)
             hull -= (a->radius == 2) ? 40.0 : 24.0;
             if (hull <= 0.0) {
                 hull = 0.0;
-                game_over = 1;
+                score = 0;
+                state = STATE_DEAD;
             }
         }
+    }
+}
+
+static void put_cell(char *frame, int x, int y, char ch)
+{
+    if (x >= 0 && x < W && y >= 0 && y < play_height())
+        frame[y * W + x] = ch;
+}
+
+static void draw_text_center(char *frame, int y, const char *text)
+{
+    int x = (W - (int)strlen(text)) / 2;
+    size_t i;
+
+    for (i = 0; text[i] != '\0'; i++)
+        put_cell(frame, x + (int)i, y, text[i]);
+}
+
+static void draw_box(char *frame, int bx, int by, int bw, int bh)
+{
+    int x, y;
+
+    for (y = 0; y < bh; y++) {
+        for (x = 0; x < bw; x++) {
+            char ch = ' ';
+
+            if (x == 0 || x == bw - 1 || y == 0 || y == bh - 1) {
+                if ((x == 0 || x == bw - 1) && (y == 0 || y == bh - 1))
+                    ch = '+';
+                else if (y == 0 || y == bh - 1)
+                    ch = '-';
+                else
+                    ch = '|';
+            }
+
+            put_cell(frame, bx + x, by + y, ch);
+        }
+    }
+}
+
+static void format_time(char *buf, size_t size, double seconds)
+{
+    int total = (int)seconds;
+
+    snprintf(buf, size, "%02d:%02d", total / 60, total % 60);
+}
+
+static void draw_menu(char *frame)
+{
+    int mid = play_height() / 2;
+
+    draw_text_center(frame, mid - 8, "S U P E R   R O C K E T");
+    draw_text_center(frame, mid - 7, "-------------------------");
+    draw_text_center(frame, mid - 5, "E A R T H   ->   M A R S");
+    draw_text_center(frame, mid - 2, "[ ENTER ]  lift off");
+    draw_text_center(frame, mid - 1, "[   Q   ]  quit");
+    draw_text_center(frame, mid + 2, "Fly with ARROWS or WASD.");
+    draw_text_center(frame, mid + 3, "Thrust burns fuel. Dodge the asteroids.");
+    draw_text_center(frame, mid + 4, "Reach Mars orbit to complete the mission.");
+}
+
+static void draw_overlay(char *frame)
+{
+    char time_text[16];
+    char score_text[32];
+
+    if (state == STATE_PAUSED) {
+        int w = 30;
+        int h = 5;
+        int x = (W - w) / 2;
+        int y = play_height() / 2 - h / 2;
+
+        draw_box(frame, x, y, w, h);
+        draw_text_center(frame, y + 1, "PAUSED");
+        draw_text_center(frame, y + 3, "P resume    Q menu");
+    } else if (state == STATE_WON) {
+        int w = 38;
+        int h = 9;
+        int x = (W - w) / 2;
+        int y = play_height() / 2 - h / 2;
+
+        format_time(time_text, sizeof(time_text), mission_time);
+        snprintf(score_text, sizeof(score_text), "SCORE  %d", score);
+
+        draw_box(frame, x, y, w, h);
+        draw_text_center(frame, y + 1, "MARS ORBIT ACHIEVED");
+        draw_text_center(frame, y + 3, time_text);
+        draw_text_center(frame, y + 4, score_text);
+        draw_text_center(frame, y + 6, "R fly again    Q menu");
+    } else if (state == STATE_DEAD) {
+        int w = 34;
+        int h = 7;
+        int x = (W - w) / 2;
+        int y = play_height() / 2 - h / 2;
+
+        draw_box(frame, x, y, w, h);
+        draw_text_center(frame, y + 1, "MISSION FAILED");
+        draw_text_center(frame, y + 3, "the rocket broke apart");
+        draw_text_center(frame, y + 5, "R retry    Q menu");
     }
 }
 
@@ -559,25 +677,32 @@ static void draw_frame(void)
     memset(frame, ' ', (size_t)W * (size_t)play_height());
     draw_stars(frame);
 
-    draw_disk(frame, earth_screen, world_mid(), EARTH_RADIUS, '#', 'o', 3);
-    draw_label(frame, earth_screen, (int)world_mid() - (int)EARTH_RADIUS - 2, "EARTH");
+    if (state != STATE_MENU) {
+        draw_disk(frame, earth_screen, world_mid(), EARTH_RADIUS, '#', 'o', 3);
+        draw_label(frame, earth_screen, (int)world_mid() - (int)EARTH_RADIUS - 2, "EARTH");
 
-    draw_disk(frame, mars_screen, world_mid(), MARS_RADIUS, '#', '.', 7);
-    draw_label(frame, mars_screen, (int)world_mid() - (int)MARS_RADIUS - 2, "MARS");
+        draw_disk(frame, mars_screen, world_mid(), MARS_RADIUS, '#', '.', 7);
+        draw_label(frame, mars_screen, (int)world_mid() - (int)MARS_RADIUS - 2, "MARS");
 
-    {
-        int i;
+        {
+            int i;
 
-        for (i = 0; i < MAX_ASTEROIDS; i++) {
-            if (!asteroids[i].alive)
-                continue;
-            draw_disk(frame, asteroids[i].x - camera_x, asteroids[i].y,
-                      (double)asteroids[i].radius * 1.2, 'O', 'o', i * 13 + 5);
+            for (i = 0; i < MAX_ASTEROIDS; i++) {
+                if (!asteroids[i].alive)
+                    continue;
+                draw_disk(frame, asteroids[i].x - camera_x, asteroids[i].y,
+                          (double)asteroids[i].radius * 1.2, 'O', 'o', i * 13 + 5);
+            }
         }
+
+        draw_rocket(frame, (int)(player_x - camera_x + 0.5), (int)(player_y + 0.5),
+                    last_ax, last_ay);
+    } else {
+        draw_menu(frame);
     }
 
-    draw_rocket(frame, (int)(player_x - camera_x + 0.5), (int)(player_y + 0.5),
-                last_ax, last_ay);
+    if (state == STATE_PAUSED || state == STATE_WON || state == STATE_DEAD)
+        draw_overlay(frame);
 
     printf("\033[H");
     for (y = 0; y < play_height(); y++) {
@@ -585,12 +710,12 @@ static void draw_frame(void)
             putchar(frame[y * W + x]);
     }
 
-    printf("\033[%d;1H", H - 1);
-    {
+    if (state != STATE_MENU) {
         int hull_bars = (int)(hull / HULL_MAX * 10.0 + 0.5);
         int fuel_bars = (int)(fuel / FUEL_MAX * 10.0 + 0.5);
         int i;
 
+        printf("\033[%d;1H", H - 1);
         printf("HULL [");
         for (i = 0; i < 10; i++)
             putchar(i < hull_bars ? '#' : '-');
@@ -599,15 +724,20 @@ static void draw_frame(void)
             putchar(i < fuel_bars ? '#' : '-');
         printf("] %3.0f%%   VEL %4.1f     ", fuel,
                sqrt(player_vx * player_vx + player_vy * player_vy));
-    }
-    printf("\033[%d;1H", H);
-    if (game_over) {
-        printf("GAME OVER - hull breach.  Press R to restart, Q to quit.               ");
-    } else if (mission_won) {
-        printf("MARS REACHED!  Press R to fly again, Q to quit.                         ");
+
+        printf("\033[%d;1H", H);
+        {
+            char time_text[16];
+
+            format_time(time_text, sizeof(time_text), mission_time);
+            printf("DIST %4.0f / %.0f   TIME %s   P pause   Q menu                    ",
+                   player_x, WORLD_LENGTH, time_text);
+        }
     } else {
-        printf("DIST %4.0f / %.0f     ARROWS / WASD thrust     Q quit              ",
-               player_x, WORLD_LENGTH);
+        printf("\033[%d;1H", H - 1);
+        printf("                                                                    ");
+        printf("\033[%d;1H", H);
+        printf("                                                                    ");
     }
     fflush(stdout);
 
@@ -625,8 +755,8 @@ static void reset_game(void)
     camera_x = player_x - W * 0.35;
     fuel = FUEL_MAX;
     hull = HULL_MAX;
-    mission_won = 0;
-    game_over = 0;
+    mission_time = 0.0;
+    score = 0;
     spawn_timer = 3.0;
 
     for (i = 0; i < 4; i++)
@@ -654,27 +784,63 @@ int main(void)
         long elapsed;
 
         while ((key = read_key()) != 0) {
-            if (key == 'q' || key == 'Q' || key == KEY_ESC)
+            if (key == KEY_ESC) {
                 running = 0;
-            if (key == 'r' || key == 'R')
-                reset_game();
+                continue;
+            }
 
-            if (!mission_won && !game_over) {
-                if (key == KEY_UP || key == 'w' || key == 'W')
+            if (state == STATE_MENU) {
+                if (key == 'q' || key == 'Q') {
+                    running = 0;
+                } else if (key == '\r' || key == '\n') {
+                    reset_game();
+                    state = STATE_PLAYING;
+                }
+            } else if (state == STATE_PLAYING) {
+                if (key == 'q' || key == 'Q') {
+                    state = STATE_MENU;
+                } else if (key == 'p' || key == 'P') {
+                    state = STATE_PAUSED;
+                } else if (key == 'r' || key == 'R') {
+                    reset_game();
+                    state = STATE_PLAYING;
+                } else if (key == KEY_UP || key == 'w' || key == 'W') {
                     thrust_t[0] = THRUST_MEMORY;
-                if (key == KEY_DOWN || key == 's' || key == 'S')
+                } else if (key == KEY_DOWN || key == 's' || key == 'S') {
                     thrust_t[1] = THRUST_MEMORY;
-                if (key == KEY_LEFT || key == 'a' || key == 'A')
+                } else if (key == KEY_LEFT || key == 'a' || key == 'A') {
                     thrust_t[2] = THRUST_MEMORY;
-                if (key == KEY_RIGHT || key == 'd' || key == 'D')
+                } else if (key == KEY_RIGHT || key == 'd' || key == 'D') {
                     thrust_t[3] = THRUST_MEMORY;
+                }
+            } else if (state == STATE_PAUSED) {
+                if (key == 'p' || key == 'P' || key == '\r' || key == '\n') {
+                    state = STATE_PLAYING;
+                } else if (key == 'q' || key == 'Q') {
+                    state = STATE_MENU;
+                } else if (key == 'r' || key == 'R') {
+                    reset_game();
+                    state = STATE_PLAYING;
+                }
+            } else if (state == STATE_WON || state == STATE_DEAD) {
+                if (key == 'q' || key == 'Q' || key == '\r' || key == '\n') {
+                    state = STATE_MENU;
+                } else if (key == 'r' || key == 'R') {
+                    reset_game();
+                    state = STATE_PLAYING;
+                }
             }
         }
 
-        if (!mission_won && !game_over)
+        if (state == STATE_PLAYING) {
+            mission_time += DT;
             update_player();
-        if (!mission_won && !game_over)
             update_asteroids();
+        } else if (state == STATE_MENU) {
+            camera_x += 14.0 * DT;
+            if (camera_x > WORLD_LENGTH)
+                camera_x -= WORLD_LENGTH;
+        }
 
         draw_frame();
 
