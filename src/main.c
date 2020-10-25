@@ -40,6 +40,7 @@
 #define HULL_MAX     100.0
 #define MAX_ASTEROIDS 64
 #define ASTEROID_SPAWN 1.8
+#define MAX_PARTICLES 300
 
 static int W = 80;
 static int H = 24;
@@ -70,6 +71,16 @@ typedef struct {
 static Asteroid asteroids[MAX_ASTEROIDS];
 static double spawn_timer = 3.0;
 
+typedef struct {
+    double x;
+    double y;
+    double vx;
+    double vy;
+    double life;
+    double max_life;
+    char ch;
+} Particle;
+
 typedef enum {
     STATE_MENU,
     STATE_PLAYING,
@@ -85,7 +96,10 @@ static double camera_x;
 static double fuel;
 static double hull;
 static double mission_time;
+static double invuln;
+static double shake;
 static int score;
+static Particle particles[MAX_PARTICLES];
 static GameState state = STATE_MENU;
 
 static int play_height(void)
@@ -322,6 +336,61 @@ static void draw_rocket(char *frame, int cx, int cy, double ax, double ay)
         frame[(cy - 3) * W + cx] = '*';
 }
 
+static void spawn_particle(double x, double y, double vx, double vy,
+                           double life, char ch)
+{
+    int i;
+
+    for (i = 0; i < MAX_PARTICLES; i++) {
+        if (particles[i].life <= 0.0) {
+            particles[i].x = x;
+            particles[i].y = y;
+            particles[i].vx = vx;
+            particles[i].vy = vy;
+            particles[i].life = life;
+            particles[i].max_life = life;
+            particles[i].ch = ch;
+            return;
+        }
+    }
+}
+
+static void update_particles(void)
+{
+    int i;
+
+    for (i = 0; i < MAX_PARTICLES; i++) {
+        Particle *p = &particles[i];
+
+        if (p->life <= 0.0)
+            continue;
+
+        p->life -= DT;
+        p->x += p->vx * DT;
+        p->y += p->vy * DT;
+        p->vx *= 0.985;
+        p->vy *= 0.985;
+    }
+}
+
+static void explode_rocket(void)
+{
+    static const char sparks[] = "*+.'";
+    int i;
+
+    for (i = 0; i < 44; i++) {
+        double angle = (double)(rand() % 628) / 100.0;
+        double speed = 4.0 + (double)(rand() % 140) / 5.0;
+
+        spawn_particle(player_x, player_y,
+                       cos(angle) * speed, sin(angle) * speed,
+                       0.6 + (double)(rand() % 120) / 100.0,
+                       sparks[rand() % 4]);
+    }
+
+    shake = 0.8;
+}
+
 static void add_planet_gravity(double cx, double cy, double radius, double *ax, double *ay)
 {
     double dx = cx - player_x;
@@ -403,9 +472,19 @@ static void update_player(void)
     }
 
     if (len > 0.0) {
+        double rx = player_x - ax * 2.0;
+        double ry = player_y - ay * 2.0;
+
         fuel -= FUEL_BURN * DT;
         if (fuel < 0.0)
             fuel = 0.0;
+
+        spawn_particle(rx + (double)(rand() % 3 - 1) * 0.4,
+                       ry + (double)(rand() % 3 - 1) * 0.4,
+                       -ax * 14.0 + (double)(rand() % 9 - 4),
+                       -ay * 14.0 + (double)(rand() % 9 - 4),
+                       0.25 + (double)(rand() % 25) / 100.0,
+                       (rand() % 4 == 0) ? '*' : '.');
     }
 
     player_vx += (ax * PLAYER_ACCEL + gx) * DT;
@@ -445,6 +524,11 @@ static void update_player(void)
         if (thrust_t[i] > 0.0)
             thrust_t[i] -= DT;
     }
+
+    if (invuln > 0.0)
+        invuln -= DT;
+    if (shake > 0.0)
+        shake -= DT * 2.0;
 
     target = player_x - W * 0.35;
     if (target < -20.0)
@@ -543,12 +627,30 @@ static void update_asteroids(void)
         dy = a->y - player_y;
         hit_radius = a->radius + 1.2;
 
+        if (invuln > 0.0)
+            continue;
+
         if (dx * dx + dy * dy < hit_radius * hit_radius) {
+            int j;
+
             a->alive = 0;
             hull -= (a->radius == 2) ? 40.0 : 24.0;
+            invuln = 1.2;
+            shake = 0.5;
+
+            for (j = 0; j < 10; j++) {
+                double angle = (double)(rand() % 628) / 100.0;
+                double speed = 3.0 + (double)(rand() % 80) / 10.0;
+
+                spawn_particle(player_x, player_y,
+                               cos(angle) * speed, sin(angle) * speed,
+                               0.3 + (double)(rand() % 40) / 100.0, '*');
+            }
+
             if (hull <= 0.0) {
                 hull = 0.0;
                 score = 0;
+                explode_rocket();
                 state = STATE_DEAD;
             }
         }
@@ -662,6 +764,13 @@ static void draw_frame(void)
     double last_ay = 0.0;
     double earth_screen = 0.0 - camera_x;
     double mars_screen = WORLD_LENGTH - camera_x;
+    int shx = 0;
+    int shy = 0;
+
+    if (shake > 0.0) {
+        shx = (int)(sin(shake * 47.0) * 2.0);
+        shy = (int)(cos(shake * 61.0) * 1.5);
+    }
 
     if (thrust_t[0] > 0.0)
         last_ay -= 1.0;
@@ -678,11 +787,13 @@ static void draw_frame(void)
     draw_stars(frame);
 
     if (state != STATE_MENU) {
-        draw_disk(frame, earth_screen, world_mid(), EARTH_RADIUS, '#', 'o', 3);
-        draw_label(frame, earth_screen, (int)world_mid() - (int)EARTH_RADIUS - 2, "EARTH");
+        draw_disk(frame, earth_screen + shx, world_mid() + shy, EARTH_RADIUS, '#', 'o', 3);
+        draw_label(frame, earth_screen + shx,
+                   (int)world_mid() - (int)EARTH_RADIUS - 2 + shy, "EARTH");
 
-        draw_disk(frame, mars_screen, world_mid(), MARS_RADIUS, '#', '.', 7);
-        draw_label(frame, mars_screen, (int)world_mid() - (int)MARS_RADIUS - 2, "MARS");
+        draw_disk(frame, mars_screen + shx, world_mid() + shy, MARS_RADIUS, '#', '.', 7);
+        draw_label(frame, mars_screen + shx,
+                   (int)world_mid() - (int)MARS_RADIUS - 2 + shy, "MARS");
 
         {
             int i;
@@ -690,13 +801,27 @@ static void draw_frame(void)
             for (i = 0; i < MAX_ASTEROIDS; i++) {
                 if (!asteroids[i].alive)
                     continue;
-                draw_disk(frame, asteroids[i].x - camera_x, asteroids[i].y,
+                draw_disk(frame, asteroids[i].x - camera_x + shx,
+                          asteroids[i].y + shy,
                           (double)asteroids[i].radius * 1.2, 'O', 'o', i * 13 + 5);
             }
         }
 
-        draw_rocket(frame, (int)(player_x - camera_x + 0.5), (int)(player_y + 0.5),
-                    last_ax, last_ay);
+        if (!(invuln > 0.0 && ((int)(invuln * 12.0) % 2 == 0))) {
+            draw_rocket(frame, (int)(player_x - camera_x + 0.5) + shx,
+                        (int)(player_y + 0.5) + shy, last_ax, last_ay);
+        }
+
+        {
+            int i;
+
+            for (i = 0; i < MAX_PARTICLES; i++) {
+                if (particles[i].life <= 0.0)
+                    continue;
+                put_cell(frame, (int)(particles[i].x - camera_x + 0.5) + shx,
+                         (int)(particles[i].y + 0.5) + shy, particles[i].ch);
+            }
+        }
     } else {
         draw_menu(frame);
     }
@@ -756,6 +881,8 @@ static void reset_game(void)
     fuel = FUEL_MAX;
     hull = HULL_MAX;
     mission_time = 0.0;
+    invuln = 0.0;
+    shake = 0.0;
     score = 0;
     spawn_timer = 3.0;
 
@@ -764,6 +891,9 @@ static void reset_game(void)
 
     for (i = 0; i < MAX_ASTEROIDS; i++)
         asteroids[i].alive = 0;
+
+    for (i = 0; i < MAX_PARTICLES; i++)
+        particles[i].life = 0.0;
 }
 
 int main(void)
@@ -836,6 +966,9 @@ int main(void)
             mission_time += DT;
             update_player();
             update_asteroids();
+            update_particles();
+        } else if (state == STATE_WON || state == STATE_DEAD) {
+            update_particles();
         } else if (state == STATE_MENU) {
             camera_x += 14.0 * DT;
             if (camera_x > WORLD_LENGTH)
