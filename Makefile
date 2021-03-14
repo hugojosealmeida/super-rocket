@@ -4,11 +4,13 @@ LDLIBS  ?= -lm
 LDFLAGS ?=
 
 BIN     := super-rocket
+SRC     := src/main.c src/game.c src/render.c src/term.c
+HDR     := src/game.h src/render.h src/term.h
 
 all: $(BIN)
 
-$(BIN): src/main.c
-	$(CC) $(CFLAGS) -o $@ src/main.c $(LDFLAGS) $(LDLIBS)
+$(BIN): $(SRC) $(HDR)
+	$(CC) $(CFLAGS) -o $@ $(SRC) $(LDFLAGS) $(LDLIBS)
 
 clean:
 	rm -f $(BIN)
