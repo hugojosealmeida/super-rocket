@@ -142,18 +142,28 @@ static void draw_rocket(Canvas *c, int cx, int cy, double ax, double ay)
         put_cell(c, cx, cy - 3, '*');
 }
 
-static void draw_menu(Canvas *c)
+static void draw_menu(const Game *g, Canvas *c)
 {
     int mid = c->height / 2;
+    int i;
 
-    draw_text_center(c, mid - 8, "S U P E R   R O C K E T");
-    draw_text_center(c, mid - 7, "-------------------------");
-    draw_text_center(c, mid - 5, "E A R T H   ->   M A R S");
-    draw_text_center(c, mid - 2, "[ ENTER ]  lift off");
-    draw_text_center(c, mid - 1, "[   Q   ]  quit");
-    draw_text_center(c, mid + 2, "Fly with ARROWS or WASD.");
-    draw_text_center(c, mid + 3, "Thrust burns fuel. Dodge the asteroids.");
-    draw_text_center(c, mid + 4, "Reach Mars orbit to complete the mission.");
+    draw_text_center(c, mid - 10, "S U P E R   R O C K E T");
+    draw_text_center(c, mid - 9, "-------------------------");
+    draw_text_center(c, mid - 7, "E A R T H   ->   M A R S");
+
+    for (i = 0; i < DIFFICULTY_COUNT; i++) {
+        char label[80];
+
+        snprintf(label, sizeof(label), "%s [%d] %-6s   best %d",
+                 (i == (int)g->difficulty) ? ">" : " ", i + 1,
+                 game_difficulty_name((Difficulty)i), g->best[i]);
+        draw_text_center(c, mid - 4 + i, label);
+    }
+
+    draw_text_center(c, mid, "[ ENTER ]  lift off        [ Q ]  quit");
+    draw_text_center(c, mid + 3, "Fly with ARROWS or WASD.");
+    draw_text_center(c, mid + 4, "Thrust burns fuel. Dodge the asteroids.");
+    draw_text_center(c, mid + 5, "Reach Mars orbit to complete the mission.");
 }
 
 static void format_time(char *buf, size_t size, double seconds)
@@ -178,7 +188,7 @@ static void draw_overlay(const Game *g, Canvas *c)
         char time_text[16];
         char score_text[32];
         int w = 38;
-        int h = 9;
+        int h = 10;
         int x = (c->width - w) / 2;
         int y = g->play_height / 2 - h / 2;
 
@@ -189,7 +199,9 @@ static void draw_overlay(const Game *g, Canvas *c)
         draw_text_center(c, y + 1, "MARS ORBIT ACHIEVED");
         draw_text_center(c, y + 3, time_text);
         draw_text_center(c, y + 4, score_text);
-        draw_text_center(c, y + 6, "R fly again    Q menu");
+        if (g->new_best)
+            draw_text_center(c, y + 5, "NEW BEST!");
+        draw_text_center(c, y + 8, "R fly again    Q menu");
     } else if (g->state == GAME_DEAD) {
         int w = 34;
         int h = 7;
@@ -225,18 +237,20 @@ static void draw_hud(const Game *g, Canvas *c)
         return;
 
     make_bar(hull_bar, g->hull, GAME_HULL_MAX, 10);
-    make_bar(fuel_bar, g->fuel, GAME_FUEL_MAX, 10);
+    make_bar(fuel_bar, g->fuel, g->fuel_max, 10);
     speed = sqrt(g->player_vx * g->player_vx + g->player_vy * g->player_vy);
 
     snprintf(line, sizeof(line),
              "HULL [%s] %3.0f%%   FUEL [%s] %3.0f%%   VEL %4.1f",
-             hull_bar, g->hull, fuel_bar, g->fuel, speed);
+             hull_bar, g->hull, fuel_bar,
+             g->fuel / g->fuel_max * 100.0, speed);
     draw_text(c, 0, g->height - 2, line);
 
     format_time(time_text, sizeof(time_text), g->mission_time);
     snprintf(line, sizeof(line),
-             "DIST %4.0f / %.0f   TIME %s   P pause   Q menu",
-             g->player_x, GAME_WORLD_LENGTH, time_text);
+             "DIST %4.0f / %.0f   TIME %s   %s   P pause   Q menu",
+             g->player_x, GAME_WORLD_LENGTH, time_text,
+             game_difficulty_name(g->difficulty));
     draw_text(c, 0, g->height - 1, line);
 }
 
@@ -311,7 +325,7 @@ void render_frame(const Game *g)
             }
         }
     } else {
-        draw_menu(&c);
+        draw_menu(g, &c);
     }
 
     draw_overlay(g, &c);

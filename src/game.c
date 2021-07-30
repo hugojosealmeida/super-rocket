@@ -1,18 +1,89 @@
 #include "game.h"
 
 #include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #define DT 0.033
 
 #define PLAYER_ACCEL     26.0
 #define PLAYER_MAX_SPEED 45.0
-#define PLAYER_DRAG      0.9
+#define PLAYER_DRAG      0.55
 #define THRUST_MEMORY    0.12
 
-#define FUEL_BURN        1.8
+#define FUEL_BURN        1.5
 #define GRAVITY_MU       1500.0
-#define ASTEROID_SPAWN   1.8
+
+typedef struct {
+    double fuel;
+    double gravity;
+    double spawn_interval;
+} DifficultyConfig;
+
+static const DifficultyConfig DIFFICULTIES[DIFFICULTY_COUNT] = {
+    { 140.0, 0.80, 2.8 },
+    { 115.0, 1.00, 2.2 },
+    {  90.0, 1.20, 1.6 }
+};
+
+static const char *DIFFICULTY_NAMES[DIFFICULTY_COUNT] = {
+    "EASY", "NORMAL", "HARD"
+};
+
+static const char *score_path(void)
+{
+    static char path[1024];
+    const char *home = getenv("HOME");
+
+    if (home != NULL)
+        snprintf(path, sizeof(path), "%s/.super_rocket_scores", home);
+    else
+        snprintf(path, sizeof(path), ".super_rocket_scores");
+
+    return path;
+}
+
+const char *game_difficulty_name(Difficulty difficulty)
+{
+    if (difficulty < 0 || difficulty >= DIFFICULTY_COUNT)
+        return "NORMAL";
+    return DIFFICULTY_NAMES[difficulty];
+}
+
+void game_load_scores(Game *g)
+{
+    FILE *file;
+    int i;
+
+    for (i = 0; i < DIFFICULTY_COUNT; i++)
+        g->best[i] = 0;
+
+    file = fopen(score_path(), "r");
+    if (file == NULL)
+        return;
+
+    for (i = 0; i < DIFFICULTY_COUNT; i++) {
+        if (fscanf(file, "%d", &g->best[i]) != 1)
+            g->best[i] = 0;
+    }
+
+    fclose(file);
+}
+
+void game_save_scores(const Game *g)
+{
+    FILE *file;
+    int i;
+
+    file = fopen(score_path(), "w");
+    if (file == NULL)
+        return;
+
+    for (i = 0; i < DIFFICULTY_COUNT; i++)
+        fprintf(file, "%d\n", g->best[i]);
+
+    fclose(file);
+}
 
 static double play_mid(const Game *g)
 {
@@ -41,8 +112,10 @@ void game_init(Game *g, int width, int height)
     g->height = height;
     g->play_height = height - 2;
     g->world_mid = (double)g->play_height / 2.0;
+    g->difficulty = DIFFICULTY_NORMAL;
 
     init_stars(g);
+    game_load_scores(g);
 
     game_reset(g);
     g->state = GAME_MENU;
@@ -50,6 +123,7 @@ void game_init(Game *g, int width, int height)
 
 void game_reset(Game *g)
 {
+    const DifficultyConfig *config = &DIFFICULTIES[g->difficulty];
     int i;
 
     g->player_x = GAME_EARTH_RADIUS + 11.0;
@@ -57,13 +131,17 @@ void game_reset(Game *g)
     g->player_vx = 0.0;
     g->player_vy = 0.0;
     g->camera_x = g->player_x - g->width * 0.35;
-    g->fuel = GAME_FUEL_MAX;
+    g->fuel_max = config->fuel;
+    g->fuel = config->fuel;
     g->hull = GAME_HULL_MAX;
     g->mission_time = 0.0;
     g->invuln = 0.0;
     g->shake = 0.0;
     g->spawn_timer = 3.0;
+    g->gravity_scale = config->gravity;
+    g->spawn_interval = config->spawn_interval;
     g->score = 0;
+    g->new_best = 0;
 
     for (i = 0; i < 4; i++)
         g->thrust[i] = 0.0;
@@ -73,6 +151,12 @@ void game_reset(Game *g)
 
     for (i = 0; i < GAME_MAX_PARTICLES; i++)
         g->particles[i].life = 0.0;
+}
+
+void game_set_difficulty(Game *g, Difficulty difficulty)
+{
+    if (difficulty >= 0 && difficulty < DIFFICULTY_COUNT)
+        g->difficulty = difficulty;
 }
 
 void game_start(Game *g)
@@ -181,7 +265,7 @@ static void add_planet_gravity(const Game *g, double cx, double cy,
         dist2 = min_dist * min_dist;
 
     dist = sqrt(dist2);
-    pull = GRAVITY_MU / dist2;
+    pull = GRAVITY_MU * g->gravity_scale / dist2;
 
     *ax += dx / dist * pull;
     *ay += dy / dist * pull;
@@ -327,6 +411,11 @@ static void update_player(Game *g)
                 bonus = 0.0;
 
             g->score = (int)(g->hull * 8.0 + g->fuel * 6.0 + bonus * 3.0);
+            if (g->score > g->best[g->difficulty]) {
+                g->best[g->difficulty] = g->score;
+                g->new_best = 1;
+                game_save_scores(g);
+            }
             g->state = GAME_WON;
         }
     }
@@ -381,7 +470,7 @@ static void update_asteroids(Game *g)
     g->spawn_timer -= DT;
     if (g->spawn_timer <= 0.0) {
         spawn_asteroid(g);
-        g->spawn_timer = ASTEROID_SPAWN * (0.7 + (double)(rand() % 60) / 100.0);
+        g->spawn_timer = g->spawn_interval * (0.7 + (double)(rand() % 60) / 100.0);
     }
 
     for (i = 0; i < GAME_MAX_ASTEROIDS; i++) {

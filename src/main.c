@@ -19,6 +19,8 @@ static void handle_input(Game *g, const TermInput *in, int *running)
             *running = 0;
         } else if (in->enter) {
             game_start(g);
+        } else if (in->digit >= 1 && in->digit <= DIFFICULTY_COUNT) {
+            game_set_difficulty(g, (Difficulty)(in->digit - 1));
         }
         break;
 
