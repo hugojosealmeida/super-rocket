@@ -90,13 +90,24 @@ int term_should_stop(void)
     return stop_requested != 0;
 }
 
-void term_draw(const char *chars, int width, int height)
+void term_draw(const char *chars, const unsigned char *colors, int width, int height)
 {
-    int y;
+    int x, y;
 
     for (y = 0; y < height; y++) {
+        int current = -1;
+
         printf("\033[%d;1H", y + 1);
-        fwrite(chars + y * width, 1, (size_t)width, stdout);
+        for (x = 0; x < width; x++) {
+            int color = colors[y * width + x];
+
+            if (color != current) {
+                printf("\033[%dm", color != 0 ? color : 0);
+                current = color;
+            }
+            putchar(chars[y * width + x]);
+        }
+        printf("\033[0m");
     }
     fflush(stdout);
 }

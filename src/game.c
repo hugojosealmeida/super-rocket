@@ -126,7 +126,7 @@ void game_reset(Game *g)
     const DifficultyConfig *config = &DIFFICULTIES[g->difficulty];
     int i;
 
-    g->player_x = GAME_EARTH_RADIUS + 11.0;
+    g->player_x = GAME_EARTH_RADIUS + 18.0;
     g->player_y = g->world_mid;
     g->player_vx = 0.0;
     g->player_vy = 0.0;
@@ -198,7 +198,7 @@ void game_thrust(Game *g, int up, int down, int left, int right)
 }
 
 static void spawn_particle(Game *g, double x, double y, double vx, double vy,
-                           double life, char ch)
+                           double life, char ch, unsigned char color)
 {
     int i;
 
@@ -210,6 +210,7 @@ static void spawn_particle(Game *g, double x, double y, double vx, double vy,
             g->particles[i].vy = vy;
             g->particles[i].life = life;
             g->particles[i].ch = ch;
+            g->particles[i].color = color;
             return;
         }
     }
@@ -245,7 +246,8 @@ static void explode_rocket(Game *g)
         spawn_particle(g, g->player_x, g->player_y,
                        cos(angle) * speed, sin(angle) * speed,
                        0.6 + (double)(rand() % 120) / 100.0,
-                       sparks[rand() % 4]);
+                       sparks[rand() % 4],
+                       (unsigned char)((i % 3 == 0) ? 91 : (i % 2 ? 93 : 33)));
     }
 
     g->shake = 0.8;
@@ -346,7 +348,8 @@ static void update_player(Game *g)
                        -ax * 14.0 + (double)(rand() % 9 - 4),
                        -ay * 14.0 + (double)(rand() % 9 - 4),
                        0.25 + (double)(rand() % 25) / 100.0,
-                       (rand() % 4 == 0) ? '*' : '.');
+                       (rand() % 4 == 0) ? '*' : '.',
+                       (unsigned char)((rand() % 2) ? 33 : 93));
     }
 
     g->player_vx += (ax * PLAYER_ACCEL + gx) * DT;
@@ -511,7 +514,7 @@ static void update_asteroids(Game *g)
 
                 spawn_particle(g, g->player_x, g->player_y,
                                cos(angle) * speed, sin(angle) * speed,
-                               0.3 + (double)(rand() % 40) / 100.0, '*');
+                               0.3 + (double)(rand() % 40) / 100.0, '*', 93);
             }
 
             if (g->hull <= 0.0) {
@@ -526,6 +529,8 @@ static void update_asteroids(Game *g)
 
 void game_update(Game *g)
 {
+    g->frame++;
+
     if (g->state == GAME_PLAYING) {
         g->mission_time += DT;
         update_player(g);

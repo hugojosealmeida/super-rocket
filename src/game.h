@@ -43,6 +43,7 @@ typedef struct {
     double vy;
     double life;
     char ch;
+    unsigned char color;
 } Particle;
 
 typedef struct {
@@ -80,6 +81,7 @@ typedef struct {
     int score;
     int best[DIFFICULTY_COUNT];
     int new_best;
+    unsigned long frame;
 
     Asteroid asteroids[GAME_MAX_ASTEROIDS];
     Particle particles[GAME_MAX_PARTICLES];
