@@ -158,7 +158,30 @@ static void draw_label(Canvas *c, double center_x, int y, const char *text,
     draw_text(c, x, y, text, color);
 }
 
-static void draw_rocket(Canvas *c, int cx, int cy, double ax, double ay)
+static void draw_orbit(Canvas *c, double center_x, double center_y, double radius,
+                       char ch, unsigned char color)
+{
+    const double pi = 3.14159265358979;
+    int steps = (int)(radius * 8.0);
+    int i;
+
+    if (steps < 32)
+        steps = 32;
+
+    for (i = 0; i < steps; i++) {
+        double angle = 2.0 * pi * (double)i / (double)steps;
+
+        if (i % 2 != 0)
+            continue;
+
+        put_cell(c,
+                 (int)(center_x + cos(angle) * radius + 0.5),
+                 (int)(center_y + sin(angle) * radius / 2.0 + 0.5),
+                 ch, color);
+    }
+}
+
+static void draw_rocket(Canvas *c, int cx, int cy, double ax, double ay, char flame)
 {
     static const char *sprite[] = {
         "   __   ",
@@ -179,13 +202,13 @@ static void draw_rocket(Canvas *c, int cx, int cy, double ax, double ay)
     }
 
     if (ax > 0.1)
-        put_cell(c, cx - 5, cy, '*', C_ORANGE);
+        put_cell(c, cx - 5, cy, flame, C_ORANGE);
     if (ax < -0.1)
-        put_cell(c, cx + 5, cy, '*', C_ORANGE);
+        put_cell(c, cx + 5, cy, flame, C_ORANGE);
     if (ay < -0.1)
-        put_cell(c, cx, cy + 2, '*', C_ORANGE);
+        put_cell(c, cx, cy + 2, flame, C_ORANGE);
     if (ay > 0.1)
-        put_cell(c, cx, cy - 3, '*', C_ORANGE);
+        put_cell(c, cx, cy - 3, flame, C_ORANGE);
 }
 
 static void draw_menu(const Game *g, Canvas *c)
@@ -323,10 +346,19 @@ static void draw_hud(const Game *g, Canvas *c)
     }
 
     format_time(time_text, sizeof(time_text), g->mission_time);
-    snprintf(line, sizeof(line),
-             "DIST %4.0f / %.0f   TIME %s   %s   P pause   Q menu",
-             g->player_x, GAME_WORLD_LENGTH, time_text,
-             game_difficulty_name(g->difficulty));
+    {
+        int progress = (int)(g->player_x / GAME_WORLD_LENGTH * 100.0);
+
+        if (progress < 0)
+            progress = 0;
+        if (progress > 100)
+            progress = 100;
+
+        snprintf(line, sizeof(line),
+                 "DIST %4.0f / %.0f   %3d%%   TIME %s   %s   P pause   Q menu",
+                 g->player_x, GAME_WORLD_LENGTH, progress, time_text,
+                 game_difficulty_name(g->difficulty));
+    }
     draw_text(c, 0, g->height - 1, line, C_GRAY);
     draw_text(c, 0, g->height - 1, "DIST", C_BLUE);
 }
@@ -368,6 +400,8 @@ void render_frame(const Game *g)
 
         draw_disk(&c, GAME_WORLD_LENGTH - g->camera_x + shx, g->world_mid + shy,
                   GAME_MARS_RADIUS, &mars);
+        draw_orbit(&c, GAME_WORLD_LENGTH - g->camera_x + shx, g->world_mid + shy,
+                   GAME_MARS_ORBIT, '.', C_DARK_RED);
         draw_label(&c, GAME_WORLD_LENGTH - g->camera_x + shx,
                    (int)g->world_mid - (int)GAME_MARS_RADIUS - 2 + shy,
                    "MARS", C_RED);
@@ -409,7 +443,8 @@ void render_frame(const Game *g)
                 last_ax += 1.0;
 
             draw_rocket(&c, (int)(g->player_x - g->camera_x + 0.5) + shx,
-                        (int)(g->player_y + 0.5) + shy, last_ax, last_ay);
+                        (int)(g->player_y + 0.5) + shy, last_ax, last_ay,
+                        ((g->frame / 2) % 2 == 0) ? '*' : '~');
         }
 
         {
@@ -425,6 +460,13 @@ void render_frame(const Game *g)
         }
     } else {
         draw_menu(g, &c);
+    }
+
+    if (g->state == GAME_PLAYING) {
+        if (g->fuel / g->fuel_max < 0.25 && (g->frame / 15) % 2 == 0)
+            draw_text_center(&c, 1, "LOW FUEL", C_RED);
+        if (g->hull / GAME_HULL_MAX < 0.30 && (g->frame / 15) % 2 == 0)
+            draw_text_center(&c, 2, "HULL CRITICAL", C_RED);
     }
 
     draw_overlay(g, &c);
