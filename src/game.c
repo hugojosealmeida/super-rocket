@@ -444,7 +444,7 @@ static void spawn_asteroid(Game *g)
     if (slot < 0)
         return;
 
-    x = g->camera_x + g->width + 12.0 + (double)(rand() % 180);
+    x = g->camera_x + g->width + 40.0 + (double)(rand() % 160);
     y = 3.0 + (double)(rand() % (g->play_height - 6));
     radius = (rand() % 100 < 25) ? 2 : 1;
 

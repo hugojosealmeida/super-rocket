@@ -12,6 +12,8 @@
 #define GAME_STAR_SPAN    2400.0
 #define GAME_HULL_MAX     100.0
 
+#define GAME_VERSION "0.9.0"
+
 typedef enum {
     GAME_MENU,
     GAME_PLAYING,

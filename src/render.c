@@ -234,6 +234,7 @@ static void draw_menu(const Game *g, Canvas *c)
     draw_text_center(c, mid + 3, "Fly with ARROWS or WASD.", C_GRAY);
     draw_text_center(c, mid + 4, "Thrust burns fuel. Dodge the asteroids.", C_GRAY);
     draw_text_center(c, mid + 5, "Reach Mars orbit to complete the mission.", C_GRAY);
+    draw_text_center(c, mid + 7, "super-rocket " GAME_VERSION, C_DIM);
 }
 
 static void format_time(char *buf, size_t size, double seconds)
@@ -246,14 +247,14 @@ static void format_time(char *buf, size_t size, double seconds)
 static void draw_overlay(const Game *g, Canvas *c)
 {
     if (g->state == GAME_PAUSED) {
-        int w = 30;
+        int w = 34;
         int h = 5;
         int x = (c->width - w) / 2;
         int y = g->play_height / 2 - h / 2;
 
         draw_box(c, x, y, w, h, C_CYAN);
         draw_text_center(c, y + 1, "PAUSED", C_YELLOW);
-        draw_text_center(c, y + 3, "P resume    Q menu", C_WHITE);
+        draw_text_center(c, y + 3, "P resume   R restart   Q menu", C_WHITE);
     } else if (g->state == GAME_WON) {
         char time_text[16];
         char score_text[32];
