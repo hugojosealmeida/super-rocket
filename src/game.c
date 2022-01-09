@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "rng.h"
+
 #define DT 0.033
 
 #define PLAYER_ACCEL     26.0
@@ -99,9 +101,9 @@ static void init_stars(Game *g)
         g->star_count = GAME_MAX_STARS;
 
     for (i = 0; i < g->star_count; i++) {
-        g->stars[i].x = (double)(rand() % (int)GAME_STAR_SPAN);
-        g->stars[i].y = rand() % (g->play_height - 2) + 1;
-        g->stars[i].ch = (rand() % 6 == 0) ? '+' : '.';
+        g->stars[i].x = (double)rng_range(0, (int)GAME_STAR_SPAN);
+        g->stars[i].y = rng_range(1, g->play_height - 1);
+        g->stars[i].ch = (rng_range(0, 6) == 0) ? '+' : '.';
         g->stars[i].factor = (i % 3 == 0) ? 0.20 : (i % 3 == 1) ? 0.45 : 0.75;
     }
 }

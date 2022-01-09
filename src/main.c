@@ -2,6 +2,7 @@
 
 #include "game.h"
 #include "render.h"
+#include "rng.h"
 #include "term.h"
 
 #define FRAME_TIME (1.0 / 30.0)
@@ -66,6 +67,7 @@ int main(void)
 
     term_init();
     term_size(&width, &height);
+    rng_seed_from_clock();
     game_init(&game, width, height);
 
     while (running && !term_should_stop()) {
