@@ -446,9 +446,9 @@ static void spawn_asteroid(Game *g)
     if (slot < 0)
         return;
 
-    x = g->camera_x + g->width + 40.0 + (double)(rand() % 160);
-    y = 3.0 + (double)(rand() % (g->play_height - 6));
-    radius = (rand() % 100 < 25) ? 2 : 1;
+    x = g->camera_x + g->width + 40.0 + rng_double() * 160.0;
+    y = 3.0 + rng_double() * (double)(g->play_height - 6);
+    radius = (rng_range(0, 100) < 25) ? 2 : 1;
 
     dx = x - 0.0;
     dy = y - play_mid(g);
@@ -462,8 +462,8 @@ static void spawn_asteroid(Game *g)
 
     g->asteroids[slot].x = x;
     g->asteroids[slot].y = y;
-    g->asteroids[slot].vx = -(3.0 + (double)(rand() % 8));
-    g->asteroids[slot].vy = ((double)(rand() % 100) - 50.0) / 25.0;
+    g->asteroids[slot].vx = -(3.0 + rng_double() * 8.0);
+    g->asteroids[slot].vy = (rng_double() - 0.5) * 4.0;
     g->asteroids[slot].radius = radius;
     g->asteroids[slot].alive = 1;
 }
@@ -475,7 +475,7 @@ static void update_asteroids(Game *g)
     g->spawn_timer -= DT;
     if (g->spawn_timer <= 0.0) {
         spawn_asteroid(g);
-        g->spawn_timer = g->spawn_interval * (0.7 + (double)(rand() % 60) / 100.0);
+        g->spawn_timer = g->spawn_interval * (0.7 + rng_double() * 0.6);
     }
 
     for (i = 0; i < GAME_MAX_ASTEROIDS; i++) {
