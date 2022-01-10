@@ -242,13 +242,13 @@ static void explode_rocket(Game *g)
     int i;
 
     for (i = 0; i < 44; i++) {
-        double angle = (double)(rand() % 628) / 100.0;
-        double speed = 4.0 + (double)(rand() % 140) / 5.0;
+        double angle = rng_double() * 6.283185307179586;
+        double speed = 4.0 + rng_double() * 28.0;
 
         spawn_particle(g, g->player_x, g->player_y,
                        cos(angle) * speed, sin(angle) * speed,
-                       0.6 + (double)(rand() % 120) / 100.0,
-                       sparks[rand() % 4],
+                       0.6 + rng_double() * 1.2,
+                       sparks[rng_range(0, 4)],
                        (unsigned char)((i % 3 == 0) ? 91 : (i % 2 ? 93 : 33)));
     }
 
@@ -345,13 +345,13 @@ static void update_player(Game *g)
         if (g->fuel < 0.0)
             g->fuel = 0.0;
 
-        spawn_particle(g, rx + (double)(rand() % 3 - 1) * 0.4,
-                       ry + (double)(rand() % 3 - 1) * 0.4,
-                       -ax * 14.0 + (double)(rand() % 9 - 4),
-                       -ay * 14.0 + (double)(rand() % 9 - 4),
-                       0.25 + (double)(rand() % 25) / 100.0,
-                       (rand() % 4 == 0) ? '*' : '.',
-                       (unsigned char)((rand() % 2) ? 33 : 93));
+        spawn_particle(g, rx + (rng_double() - 0.5) * 0.8,
+                       ry + (rng_double() - 0.5) * 0.8,
+                       -ax * 14.0 + (rng_double() - 0.5) * 9.0,
+                       -ay * 14.0 + (rng_double() - 0.5) * 9.0,
+                       0.25 + rng_double() * 0.25,
+                       (rng_range(0, 4) == 0) ? '*' : '.',
+                       (unsigned char)(rng_range(0, 2) ? 33 : 93));
     }
 
     g->player_vx += (ax * PLAYER_ACCEL + gx) * DT;
@@ -511,12 +511,12 @@ static void update_asteroids(Game *g)
             g->shake = 0.5;
 
             for (j = 0; j < 10; j++) {
-                double angle = (double)(rand() % 628) / 100.0;
-                double speed = 3.0 + (double)(rand() % 80) / 10.0;
+                double angle = rng_double() * 6.283185307179586;
+                double speed = 3.0 + rng_double() * 8.0;
 
                 spawn_particle(g, g->player_x, g->player_y,
                                cos(angle) * speed, sin(angle) * speed,
-                               0.3 + (double)(rand() % 40) / 100.0, '*', 93);
+                               0.3 + rng_double() * 0.4, '*', 93);
             }
 
             if (g->hull <= 0.0) {
