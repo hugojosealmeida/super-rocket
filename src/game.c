@@ -5,6 +5,7 @@
 #include <stdlib.h>
 
 #include "rng.h"
+#include "util.h"
 
 #define DT 0.033
 
@@ -341,9 +342,7 @@ static void update_player(Game *g)
         double rx = g->player_x - ax * 2.0;
         double ry = g->player_y - ay * 2.0;
 
-        g->fuel -= FUEL_BURN * DT;
-        if (g->fuel < 0.0)
-            g->fuel = 0.0;
+        g->fuel = util_clamp(g->fuel - FUEL_BURN * DT, 0.0, g->fuel_max);
 
         spawn_particle(g, rx + (rng_double() - 0.5) * 0.8,
                        ry + (rng_double() - 0.5) * 0.8,
@@ -406,10 +405,8 @@ static void update_player(Game *g)
     g->camera_x += (target - g->camera_x) * 0.15;
 
     {
-        double dx = g->player_x - GAME_WORLD_LENGTH;
-        double dy = g->player_y - play_mid(g);
-
-        if (sqrt(dx * dx + dy * dy) < GAME_MARS_ORBIT) {
+        if (util_distance(g->player_x, g->player_y, GAME_WORLD_LENGTH, play_mid(g)) <
+            GAME_MARS_ORBIT) {
             double bonus = 240.0 - g->mission_time;
 
             if (bonus < 0.0)
