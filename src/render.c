@@ -6,6 +6,7 @@
 #include <math.h>
 
 #include "term.h"
+#include "util.h"
 
 #define C_DEFAULT  0
 #define C_DIM      90
@@ -237,13 +238,6 @@ static void draw_menu(const Game *g, Canvas *c)
     draw_text_center(c, mid + 7, "super-rocket " GAME_VERSION, C_DIM);
 }
 
-static void format_time(char *buf, size_t size, double seconds)
-{
-    int total = (int)seconds;
-
-    snprintf(buf, size, "%02d:%02d", total / 60, total % 60);
-}
-
 static void draw_overlay(const Game *g, Canvas *c)
 {
     if (g->state == GAME_PAUSED) {
@@ -263,7 +257,7 @@ static void draw_overlay(const Game *g, Canvas *c)
         int x = (c->width - w) / 2;
         int y = g->play_height / 2 - h / 2;
 
-        format_time(time_text, sizeof(time_text), g->mission_time);
+        util_format_time(time_text, sizeof(time_text), g->mission_time);
         snprintf(score_text, sizeof(score_text), "SCORE  %d", g->score);
 
         draw_box(c, x, y, w, h, C_GREEN);
@@ -346,7 +340,7 @@ static void draw_hud(const Game *g, Canvas *c)
                      fuel_bar[x] == '#' ? C_CYAN : C_DIM);
     }
 
-    format_time(time_text, sizeof(time_text), g->mission_time);
+    util_format_time(time_text, sizeof(time_text), g->mission_time);
     {
         int progress = (int)(g->player_x / GAME_WORLD_LENGTH * 100.0);
 
