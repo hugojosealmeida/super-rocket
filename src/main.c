@@ -1,4 +1,7 @@
 #include <stdio.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "game.h"
 #include "render.h"
@@ -58,16 +61,37 @@ static void handle_input(Game *g, const TermInput *in, int *running)
     }
 }
 
-int main(void)
+int main(int argc, char **argv)
 {
     Game game;
     int width;
     int height;
     int running = 1;
+    int i;
+    int have_seed = 0;
+    uint64_t seed = 0;
+
+    for (i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "--seed") == 0 && i + 1 < argc) {
+            seed = strtoull(argv[++i], NULL, 10);
+            have_seed = 1;
+        } else if (strncmp(argv[i], "--seed=", 7) == 0) {
+            seed = strtoull(argv[i] + 7, NULL, 10);
+            have_seed = 1;
+        } else {
+            fprintf(stderr, "super-rocket: unknown option '%s'\n", argv[i]);
+            fprintf(stderr, "usage: %s [--seed N]\n", argv[0]);
+            return 2;
+        }
+    }
+
+    if (have_seed)
+        rng_seed(seed);
+    else
+        rng_seed_from_clock();
 
     term_init();
     term_size(&width, &height);
-    rng_seed_from_clock();
     game_init(&game, width, height);
 
     while (running && !term_should_stop()) {
