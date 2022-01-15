@@ -78,6 +78,16 @@ int main(int argc, char **argv)
         } else if (strncmp(argv[i], "--seed=", 7) == 0) {
             seed = strtoull(argv[i] + 7, NULL, 10);
             have_seed = 1;
+        } else if (strcmp(argv[i], "--version") == 0) {
+            printf("super-rocket %s\n", GAME_VERSION);
+            return 0;
+        } else if (strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0) {
+            printf("usage: %s [--seed N] [--version] [--help]\n", argv[0]);
+            printf("\n");
+            printf("  --seed N    use a fixed random seed\n");
+            printf("  --version   print the version and exit\n");
+            printf("  --help      show this help\n");
+            return 0;
         } else {
             fprintf(stderr, "super-rocket: unknown option '%s'\n", argv[i]);
             fprintf(stderr, "usage: %s [--seed N]\n", argv[0]);
