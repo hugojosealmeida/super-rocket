@@ -4,8 +4,8 @@ LDLIBS  ?= -lm
 LDFLAGS ?=
 
 BIN     := super-rocket
-SRC     := src/main.c src/game.c src/render.c src/term.c src/rng.c src/util.c
-HDR     := src/game.h src/render.h src/term.h src/rng.h src/util.h
+SRC     := src/main.c src/game.c src/render.c src/term.c src/rng.c src/util.c src/storage.c
+HDR     := src/game.h src/render.h src/term.h src/rng.h src/util.h src/storage.h
 
 all: $(BIN)
 
