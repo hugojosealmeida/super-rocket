@@ -5,6 +5,7 @@
 #include <stdlib.h>
 
 #include "rng.h"
+#include "storage.h"
 #include "util.h"
 
 #define DT 0.033
@@ -33,19 +34,6 @@ static const char *DIFFICULTY_NAMES[DIFFICULTY_COUNT] = {
     "EASY", "NORMAL", "HARD"
 };
 
-static const char *score_path(void)
-{
-    static char path[1024];
-    const char *home = getenv("HOME");
-
-    if (home != NULL)
-        snprintf(path, sizeof(path), "%s/.super_rocket_scores", home);
-    else
-        snprintf(path, sizeof(path), ".super_rocket_scores");
-
-    return path;
-}
-
 const char *game_difficulty_name(Difficulty difficulty)
 {
     if (difficulty < 0 || difficulty >= DIFFICULTY_COUNT)
@@ -61,7 +49,7 @@ void game_load_scores(Game *g)
     for (i = 0; i < DIFFICULTY_COUNT; i++)
         g->best[i] = 0;
 
-    file = fopen(score_path(), "r");
+    file = fopen(storage_path(".super_rocket_scores"), "r");
     if (file == NULL)
         return;
 
@@ -78,7 +66,7 @@ void game_save_scores(const Game *g)
     FILE *file;
     int i;
 
-    file = fopen(score_path(), "w");
+    file = fopen(storage_path(".super_rocket_scores"), "w");
     if (file == NULL)
         return;
 
