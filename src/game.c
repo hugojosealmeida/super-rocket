@@ -43,37 +43,17 @@ const char *game_difficulty_name(Difficulty difficulty)
 
 void game_load_scores(Game *g)
 {
-    FILE *file;
     int i;
 
     for (i = 0; i < DIFFICULTY_COUNT; i++)
         g->best[i] = 0;
 
-    file = fopen(storage_path(".super_rocket_scores"), "r");
-    if (file == NULL)
-        return;
-
-    for (i = 0; i < DIFFICULTY_COUNT; i++) {
-        if (fscanf(file, "%d", &g->best[i]) != 1)
-            g->best[i] = 0;
-    }
-
-    fclose(file);
+    storage_read_ints(".super_rocket_scores", g->best, DIFFICULTY_COUNT);
 }
 
 void game_save_scores(const Game *g)
 {
-    FILE *file;
-    int i;
-
-    file = fopen(storage_path(".super_rocket_scores"), "w");
-    if (file == NULL)
-        return;
-
-    for (i = 0; i < DIFFICULTY_COUNT; i++)
-        fprintf(file, "%d\n", g->best[i]);
-
-    fclose(file);
+    storage_write_ints(".super_rocket_scores", g->best, DIFFICULTY_COUNT);
 }
 
 static double play_mid(const Game *g)
