@@ -56,6 +56,21 @@ void game_save_scores(const Game *g)
     storage_write_ints(".super_rocket_scores", g->best, DIFFICULTY_COUNT);
 }
 
+void game_load_settings(Game *g)
+{
+    int values[3];
+
+    g->settings.theme = 0;
+    g->settings.sound = 1;
+    g->settings.show_fps = 0;
+
+    if (storage_read_ints(".super_rocket_config", values, 3) == 0) {
+        g->settings.theme = util_clamp_int(values[0], 0, GAME_THEME_COUNT - 1);
+        g->settings.sound = values[1] != 0;
+        g->settings.show_fps = values[2] != 0;
+    }
+}
+
 static double play_mid(const Game *g)
 {
     return g->world_mid;
@@ -86,6 +101,7 @@ void game_init(Game *g, int width, int height)
     g->difficulty = DIFFICULTY_NORMAL;
 
     init_stars(g);
+    game_load_settings(g);
     game_load_scores(g);
 
     game_reset(g);

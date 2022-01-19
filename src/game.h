@@ -29,6 +29,14 @@ typedef enum {
     DIFFICULTY_COUNT
 } Difficulty;
 
+#define GAME_THEME_COUNT 3
+
+typedef struct {
+    int theme;
+    int sound;
+    int show_fps;
+} Settings;
+
 typedef struct {
     double x;
     double y;
@@ -84,6 +92,8 @@ typedef struct {
     int best[DIFFICULTY_COUNT];
     int new_best;
     unsigned long frame;
+    Settings settings;
+    double fps;
 
     Asteroid asteroids[GAME_MAX_ASTEROIDS];
     Particle particles[GAME_MAX_PARTICLES];
@@ -103,6 +113,8 @@ void game_to_menu(Game *g);
 void game_set_difficulty(Game *g, Difficulty difficulty);
 void game_load_scores(Game *g);
 void game_save_scores(const Game *g);
+void game_load_settings(Game *g);
+void game_save_settings(const Game *g);
 const char *game_difficulty_name(Difficulty difficulty);
 
 #endif
