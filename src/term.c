@@ -120,6 +120,7 @@ void term_read_input(TermInput *in)
 
     memset(in, 0, sizeof(*in));
     in->digit = -1;
+    in->letter = -1;
 
     n = read(STDIN_FILENO, buf, sizeof(buf));
     if (n <= 0)
@@ -147,6 +148,11 @@ void term_read_input(TermInput *in)
 
         i++;
 
+        if (c >= 'a' && c <= 'z')
+            in->letter = c - 'a' + 'A';
+        else if (c >= 'A' && c <= 'Z')
+            in->letter = c;
+
         switch (c) {
         case 'w': case 'W': in->up = 1; break;
         case 's': case 'S': in->down = 1; break;
@@ -155,6 +161,13 @@ void term_read_input(TermInput *in)
         case 'p': case 'P': in->pause = 1; break;
         case 'r': case 'R': in->restart = 1; break;
         case 'q': case 'Q': in->back = 1; break;
+        case 't': case 'T': in->theme = 1; break;
+        case 'm': case 'M': in->sound = 1; break;
+        case 'f': case 'F': in->fps = 1; break;
+        case 'h': case 'H': in->help = 1; break;
+        case 'i': case 'I': in->info = 1; break;
+        case ' ': in->fire = 1; break;
+        case 127: case 8: in->backspace = 1; break;
         case '\r': case '\n': in->enter = 1; break;
         default:
             if (c >= '0' && c <= '9')

@@ -12,6 +12,14 @@ typedef struct {
     int back;
     int quit;
     int digit;
+    int fire;
+    int help;
+    int info;
+    int theme;
+    int sound;
+    int fps;
+    int backspace;
+    int letter;
 } TermInput;
 
 void term_init(void);

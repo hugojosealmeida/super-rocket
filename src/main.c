@@ -17,6 +17,13 @@ static void handle_input(Game *g, const TermInput *in, int *running)
         return;
     }
 
+    if (in->theme)
+        game_cycle_theme(g);
+    if (in->sound)
+        game_toggle_sound(g);
+    if (in->fps)
+        game_toggle_fps(g);
+
     switch (g->state) {
     case GAME_MENU:
         if (in->back) {
