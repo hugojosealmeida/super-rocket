@@ -71,6 +71,35 @@ void game_load_settings(Game *g)
     }
 }
 
+void game_save_settings(const Game *g)
+{
+    int values[3];
+
+    values[0] = g->settings.theme;
+    values[1] = g->settings.sound;
+    values[2] = g->settings.show_fps;
+
+    storage_write_ints(".super_rocket_config", values, 3);
+}
+
+void game_cycle_theme(Game *g)
+{
+    g->settings.theme = (g->settings.theme + 1) % GAME_THEME_COUNT;
+    game_save_settings(g);
+}
+
+void game_toggle_sound(Game *g)
+{
+    g->settings.sound = !g->settings.sound;
+    game_save_settings(g);
+}
+
+void game_toggle_fps(Game *g)
+{
+    g->settings.show_fps = !g->settings.show_fps;
+    game_save_settings(g);
+}
+
 static double play_mid(const Game *g)
 {
     return g->world_mid;

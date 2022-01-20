@@ -115,6 +115,9 @@ void game_load_scores(Game *g);
 void game_save_scores(const Game *g);
 void game_load_settings(Game *g);
 void game_save_settings(const Game *g);
+void game_cycle_theme(Game *g);
+void game_toggle_sound(Game *g);
+void game_toggle_fps(Game *g);
 const char *game_difficulty_name(Difficulty difficulty);
 
 #endif
