@@ -6,6 +6,7 @@
 #include <math.h>
 
 #include "term.h"
+#include "theme.h"
 #include "util.h"
 
 #define C_DEFAULT  0
@@ -100,14 +101,14 @@ static void draw_stars(const Game *g, Canvas *c)
             continue;
 
         if (g->stars[i].factor < 0.3)
-            color = C_DIM;
+            color = theme_color(THEME_STAR_FAR);
         else if (g->stars[i].factor < 0.6)
-            color = C_GRAY;
+            color = theme_color(THEME_STAR_MID);
         else
-            color = C_WHITE;
+            color = theme_color(THEME_STAR_BRIGHT);
 
         if ((g->frame / 7 + (unsigned long)i) % 29 == 0)
-            color = C_CYAN;
+            color = theme_color(THEME_STAR_ACCENT);
 
         put_cell(c, x, y, g->stars[i].ch, color);
     }
@@ -363,6 +364,8 @@ void render_frame(const Game *g)
     Canvas c;
     int shx = 0;
     int shy = 0;
+
+    theme_set(g->settings.theme);
 
     c.width = g->width;
     c.height = g->height;
