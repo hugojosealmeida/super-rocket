@@ -9,18 +9,7 @@
 #include "theme.h"
 #include "util.h"
 
-#define C_DEFAULT  0
-#define C_DIM      90
-#define C_GRAY     37
-#define C_WHITE    97
-#define C_CYAN     96
-#define C_BLUE     94
-#define C_GREEN    92
-#define C_RED      91
-#define C_DARK_RED 31
-#define C_YELLOW   93
-#define C_ORANGE   33
-#define C_MAGENTA  95
+#define C_DEFAULT 0
 
 typedef struct {
     char *cells;
@@ -199,18 +188,18 @@ static void draw_rocket(Canvas *c, int cx, int cy, double ax, double ay, char fl
 
             if (ch != ' ')
                 put_cell(c, cx - 4 + col, cy - 2 + row, ch,
-                         ch == '>' ? C_CYAN : C_WHITE);
+                         ch == '>' ? theme_color(THEME_COCKPIT) : theme_color(THEME_ROCKET));
         }
     }
 
     if (ax > 0.1)
-        put_cell(c, cx - 5, cy, flame, C_ORANGE);
+        put_cell(c, cx - 5, cy, flame, theme_color(THEME_FLAME));
     if (ax < -0.1)
-        put_cell(c, cx + 5, cy, flame, C_ORANGE);
+        put_cell(c, cx + 5, cy, flame, theme_color(THEME_FLAME));
     if (ay < -0.1)
-        put_cell(c, cx, cy + 2, flame, C_ORANGE);
+        put_cell(c, cx, cy + 2, flame, theme_color(THEME_FLAME));
     if (ay > 0.1)
-        put_cell(c, cx, cy - 3, flame, C_ORANGE);
+        put_cell(c, cx, cy - 3, flame, theme_color(THEME_FLAME));
 }
 
 static void draw_menu(const Game *g, Canvas *c)
@@ -218,9 +207,9 @@ static void draw_menu(const Game *g, Canvas *c)
     int mid = c->height / 2;
     int i;
 
-    draw_text_center(c, mid - 10, "S U P E R   R O C K E T", C_CYAN);
-    draw_text_center(c, mid - 9, "-------------------------", C_BLUE);
-    draw_text_center(c, mid - 7, "E A R T H   ->   M A R S", C_WHITE);
+    draw_text_center(c, mid - 10, "S U P E R   R O C K E T", theme_color(THEME_TITLE));
+    draw_text_center(c, mid - 9, "-------------------------", theme_color(THEME_BOX));
+    draw_text_center(c, mid - 7, "E A R T H   ->   M A R S", theme_color(THEME_TEXT));
 
     for (i = 0; i < DIFFICULTY_COUNT; i++) {
         char label[80];
@@ -229,14 +218,15 @@ static void draw_menu(const Game *g, Canvas *c)
         snprintf(label, sizeof(label), "%s [%d] %-6s   best %d",
                  selected ? ">" : " ", i + 1,
                  game_difficulty_name((Difficulty)i), g->best[i]);
-        draw_text_center(c, mid - 4 + i, label, selected ? C_YELLOW : C_GRAY);
+        draw_text_center(c, mid - 4 + i, label,
+                         selected ? theme_color(THEME_WARN) : theme_color(THEME_DIM));
     }
 
-    draw_text_center(c, mid, "[ ENTER ]  lift off        [ Q ]  quit", C_WHITE);
-    draw_text_center(c, mid + 3, "Fly with ARROWS or WASD.", C_GRAY);
-    draw_text_center(c, mid + 4, "Thrust burns fuel. Dodge the asteroids.", C_GRAY);
-    draw_text_center(c, mid + 5, "Reach Mars orbit to complete the mission.", C_GRAY);
-    draw_text_center(c, mid + 7, "super-rocket " GAME_VERSION, C_DIM);
+    draw_text_center(c, mid, "[ ENTER ]  lift off        [ Q ]  quit", theme_color(THEME_TEXT));
+    draw_text_center(c, mid + 3, "Fly with ARROWS or WASD.", theme_color(THEME_DIM));
+    draw_text_center(c, mid + 4, "Thrust burns fuel. Dodge the asteroids.", theme_color(THEME_DIM));
+    draw_text_center(c, mid + 5, "Reach Mars orbit to complete the mission.", theme_color(THEME_DIM));
+    draw_text_center(c, mid + 7, "super-rocket " GAME_VERSION, theme_color(THEME_DIM));
 }
 
 static void draw_overlay(const Game *g, Canvas *c)
@@ -247,9 +237,9 @@ static void draw_overlay(const Game *g, Canvas *c)
         int x = (c->width - w) / 2;
         int y = g->play_height / 2 - h / 2;
 
-        draw_box(c, x, y, w, h, C_CYAN);
-        draw_text_center(c, y + 1, "PAUSED", C_YELLOW);
-        draw_text_center(c, y + 3, "P resume   R restart   Q menu", C_WHITE);
+        draw_box(c, x, y, w, h, theme_color(THEME_BOX));
+        draw_text_center(c, y + 1, "PAUSED", theme_color(THEME_WARN));
+        draw_text_center(c, y + 3, "P resume   R restart   Q menu", theme_color(THEME_TEXT));
     } else if (g->state == GAME_WON) {
         char time_text[16];
         char score_text[32];
@@ -261,23 +251,23 @@ static void draw_overlay(const Game *g, Canvas *c)
         util_format_time(time_text, sizeof(time_text), g->mission_time);
         snprintf(score_text, sizeof(score_text), "SCORE  %d", g->score);
 
-        draw_box(c, x, y, w, h, C_GREEN);
-        draw_text_center(c, y + 1, "MARS ORBIT ACHIEVED", C_GREEN);
-        draw_text_center(c, y + 3, time_text, C_WHITE);
-        draw_text_center(c, y + 4, score_text, C_WHITE);
+        draw_box(c, x, y, w, h, theme_color(THEME_GOOD));
+        draw_text_center(c, y + 1, "MARS ORBIT ACHIEVED", theme_color(THEME_GOOD));
+        draw_text_center(c, y + 3, time_text, theme_color(THEME_TEXT));
+        draw_text_center(c, y + 4, score_text, theme_color(THEME_TEXT));
         if (g->new_best)
-            draw_text_center(c, y + 5, "NEW BEST!", C_YELLOW);
-        draw_text_center(c, y + 8, "R fly again    Q menu", C_CYAN);
+            draw_text_center(c, y + 5, "NEW BEST!", theme_color(THEME_WARN));
+        draw_text_center(c, y + 8, "R fly again    Q menu", theme_color(THEME_LABEL));
     } else if (g->state == GAME_DEAD) {
         int w = 34;
         int h = 7;
         int x = (c->width - w) / 2;
         int y = g->play_height / 2 - h / 2;
 
-        draw_box(c, x, y, w, h, C_RED);
-        draw_text_center(c, y + 1, "MISSION FAILED", C_RED);
-        draw_text_center(c, y + 3, "the rocket broke apart", C_GRAY);
-        draw_text_center(c, y + 5, "R retry    Q menu", C_CYAN);
+        draw_box(c, x, y, w, h, theme_color(THEME_BAD));
+        draw_text_center(c, y + 1, "MISSION FAILED", theme_color(THEME_BAD));
+        draw_text_center(c, y + 3, "the rocket broke apart", theme_color(THEME_DIM));
+        draw_text_center(c, y + 5, "R retry    Q menu", theme_color(THEME_LABEL));
     }
 }
 
@@ -294,10 +284,10 @@ static void make_bar(char *buf, double value, double max, int width)
 static unsigned char gauge_color(double ratio)
 {
     if (ratio > 0.6)
-        return C_GREEN;
+        return theme_color(THEME_GOOD);
     if (ratio > 0.3)
-        return C_YELLOW;
-    return C_RED;
+        return theme_color(THEME_WARN);
+    return theme_color(THEME_BAD);
 }
 
 static void draw_hud(const Game *g, Canvas *c)
@@ -323,22 +313,22 @@ static void draw_hud(const Game *g, Canvas *c)
     snprintf(line, sizeof(line),
              "HULL [%s] %3.0f%%   FUEL [%s] %3.0f%%   VEL %4.1f",
              hull_bar, hull_ratio * 100.0, fuel_bar, fuel_ratio * 100.0, speed);
-    draw_text(c, 0, row, line, C_WHITE);
+    draw_text(c, 0, row, line, theme_color(THEME_TEXT));
 
-    draw_text(c, 0, row, "HULL", C_CYAN);
+    draw_text(c, 0, row, "HULL", theme_color(THEME_LABEL));
 
     for (x = 0; x < 10; x++)
         put_cell(c, 6 + x, row, hull_bar[x],
-                 hull_bar[x] == '#' ? gauge_color(hull_ratio) : C_DIM);
+                 hull_bar[x] == '#' ? gauge_color(hull_ratio) : theme_color(THEME_DIM));
 
     fuel_pos = strstr(line, "FUEL [");
     if (fuel_pos != NULL) {
         int fx = (int)(fuel_pos - line);
 
-        draw_text(c, fx, row, "FUEL", C_CYAN);
+        draw_text(c, fx, row, "FUEL", theme_color(THEME_LABEL));
         for (x = 0; x < 10; x++)
             put_cell(c, fx + 6 + x, row, fuel_bar[x],
-                     fuel_bar[x] == '#' ? C_CYAN : C_DIM);
+                     fuel_bar[x] == '#' ? theme_color(THEME_LABEL) : theme_color(THEME_DIM));
     }
 
     util_format_time(time_text, sizeof(time_text), g->mission_time);
@@ -355,8 +345,8 @@ static void draw_hud(const Game *g, Canvas *c)
                  g->player_x, GAME_WORLD_LENGTH, progress, time_text,
                  game_difficulty_name(g->difficulty));
     }
-    draw_text(c, 0, g->height - 1, line, C_GRAY);
-    draw_text(c, 0, g->height - 1, "DIST", C_BLUE);
+    draw_text(c, 0, g->height - 1, line, theme_color(THEME_DIM));
+    draw_text(c, 0, g->height - 1, "DIST", theme_color(THEME_LABEL));
 }
 
 void render_frame(const Game *g)
@@ -382,8 +372,14 @@ void render_frame(const Game *g)
     draw_stars(g, &c);
 
     if (g->state != GAME_MENU) {
-        DiskStyle earth = { '#', 'o', '~', C_BLUE, C_GREEN, C_CYAN, 3 };
-        DiskStyle mars = { '#', '.', '~', C_RED, C_DARK_RED, C_ORANGE, 7 };
+        DiskStyle earth = { '#', 'o', '~',
+                            theme_color(THEME_EARTH),
+                            theme_color(THEME_EARTH_DETAIL),
+                            theme_color(THEME_EARTH_EDGE), 3 };
+        DiskStyle mars = { '#', '.', '~',
+                           theme_color(THEME_MARS),
+                           theme_color(THEME_MARS_DETAIL),
+                           theme_color(THEME_MARS_EDGE), 7 };
 
         if (g->shake > 0.0) {
             shx = (int)(sin(g->shake * 47.0) * 2.0);
@@ -394,15 +390,15 @@ void render_frame(const Game *g)
                   GAME_EARTH_RADIUS, &earth);
         draw_label(&c, 0.0 - g->camera_x + shx,
                    (int)g->world_mid - (int)GAME_EARTH_RADIUS - 2 + shy,
-                   "EARTH", C_CYAN);
+                   "EARTH", theme_color(THEME_LABEL));
 
         draw_disk(&c, GAME_WORLD_LENGTH - g->camera_x + shx, g->world_mid + shy,
                   GAME_MARS_RADIUS, &mars);
-        draw_orbit(&c, GAME_WORLD_LENGTH - g->camera_x + shx, g->world_mid + shy,
-                   GAME_MARS_ORBIT, '.', C_DARK_RED);
+    draw_orbit(&c, GAME_WORLD_LENGTH - g->camera_x + shx, g->world_mid + shy,
+               GAME_MARS_ORBIT, '.', theme_color(THEME_MARS_DETAIL));
         draw_label(&c, GAME_WORLD_LENGTH - g->camera_x + shx,
                    (int)g->world_mid - (int)GAME_MARS_RADIUS - 2 + shy,
-                   "MARS", C_RED);
+                   "MARS", theme_color(THEME_MARS));
 
         {
             int i;
@@ -416,9 +412,11 @@ void render_frame(const Game *g)
                 asteroid.body = 'O';
                 asteroid.detail = 'o';
                 asteroid.edge = '.';
-                asteroid.body_color = (g->asteroids[i].radius == 2) ? C_ORANGE : C_YELLOW;
-                asteroid.detail_color = C_GRAY;
-                asteroid.edge_color = C_DIM;
+                asteroid.body_color = (g->asteroids[i].radius == 2)
+                                          ? theme_color(THEME_WARN)
+                                          : theme_color(THEME_STAR_BRIGHT);
+                asteroid.detail_color = theme_color(THEME_DIM);
+                asteroid.edge_color = theme_color(THEME_STAR_FAR);
                 asteroid.seed = i * 13 + 5;
 
                 draw_disk(&c, g->asteroids[i].x - g->camera_x + shx,
@@ -462,9 +460,9 @@ void render_frame(const Game *g)
 
     if (g->state == GAME_PLAYING) {
         if (g->fuel / g->fuel_max < 0.25 && (g->frame / 15) % 2 == 0)
-            draw_text_center(&c, 1, "LOW FUEL", C_RED);
+            draw_text_center(&c, 1, "LOW FUEL", theme_color(THEME_BAD));
         if (g->hull / GAME_HULL_MAX < 0.30 && (g->frame / 15) % 2 == 0)
-            draw_text_center(&c, 2, "HULL CRITICAL", C_RED);
+            draw_text_center(&c, 2, "HULL CRITICAL", theme_color(THEME_BAD));
     }
 
     draw_overlay(g, &c);
