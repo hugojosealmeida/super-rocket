@@ -82,6 +82,11 @@ void game_save_settings(const Game *g)
     storage_write_ints(".super_rocket_config", values, 3);
 }
 
+void game_toggle_help(Game *g)
+{
+    g->show_help = !g->show_help;
+}
+
 void game_cycle_theme(Game *g)
 {
     g->settings.theme = (g->settings.theme + 1) % GAME_THEME_COUNT;
@@ -158,6 +163,7 @@ void game_reset(Game *g)
     g->spawn_interval = config->spawn_interval;
     g->score = 0;
     g->new_best = 0;
+    g->show_help = 0;
 
     for (i = 0; i < 4; i++)
         g->thrust[i] = 0.0;
@@ -542,6 +548,9 @@ static void update_asteroids(Game *g)
 void game_update(Game *g)
 {
     g->frame++;
+
+    if (g->show_help)
+        return;
 
     if (g->state == GAME_PLAYING) {
         g->mission_time += DT;

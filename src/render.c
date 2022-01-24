@@ -229,6 +229,32 @@ static void draw_menu(const Game *g, Canvas *c)
     draw_text_center(c, mid + 7, "super-rocket " GAME_VERSION, theme_color(THEME_DIM));
 }
 
+static void draw_help(const Game *g, Canvas *c)
+{
+    int w = 54;
+    int h = 17;
+    int x = (c->width - w) / 2;
+    int y = g->play_height / 2 - h / 2;
+
+    if (x < 0)
+        x = 0;
+    if (y < 0)
+        y = 0;
+
+    draw_box(c, x, y, w, h, theme_color(THEME_BOX));
+    draw_text_center(c, y + 1, "H O W   T O   F L Y", theme_color(THEME_TITLE));
+    draw_text_center(c, y + 3, "ARROWS / WASD   thrust", theme_color(THEME_TEXT));
+    draw_text_center(c, y + 4, "SPACE           fire laser", theme_color(THEME_TEXT));
+    draw_text_center(c, y + 5, "P               pause", theme_color(THEME_TEXT));
+    draw_text_center(c, y + 6, "R               restart mission", theme_color(THEME_TEXT));
+    draw_text_center(c, y + 7, "T / M / F       theme / sound / fps", theme_color(THEME_TEXT));
+    draw_text_center(c, y + 8, "Q               menu or quit", theme_color(THEME_TEXT));
+    draw_text_center(c, y + 10, "Collect fuel, shields and repairs.", theme_color(THEME_DIM));
+    draw_text_center(c, y + 11, "Shoot asteroids and avoid the UFOs.", theme_color(THEME_DIM));
+    draw_text_center(c, y + 12, "Reach the Mars orbit to win.", theme_color(THEME_DIM));
+    draw_text_center(c, y + 15, "H close help", theme_color(THEME_WARN));
+}
+
 static void draw_overlay(const Game *g, Canvas *c)
 {
     if (g->state == GAME_PAUSED) {
@@ -466,6 +492,8 @@ void render_frame(const Game *g)
     }
 
     draw_overlay(g, &c);
+    if (g->show_help)
+        draw_help(g, &c);
     draw_hud(g, &c);
 
     term_draw(c.cells, c.colors, c.width, c.height);
