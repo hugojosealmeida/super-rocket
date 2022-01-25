@@ -119,7 +119,10 @@ int main(int argc, char **argv)
     term_size(&width, &height);
     game_init(&game, width, height);
 
+    game.fps = 0.0;
+
     while (running && !term_should_stop()) {
+        static double last_frame = 0.0;
         double frame_start = term_time();
         double elapsed;
         TermInput input;
@@ -132,6 +135,17 @@ int main(int argc, char **argv)
         elapsed = term_time() - frame_start;
         if (elapsed < FRAME_TIME)
             term_sleep(FRAME_TIME - elapsed);
+
+        {
+            double now = term_time();
+
+            if (last_frame > 0.0 && now > last_frame) {
+                double sample = 1.0 / (now - last_frame);
+
+                game.fps = game.fps <= 0.0 ? sample : game.fps * 0.9 + sample * 0.1;
+            }
+            last_frame = now;
+        }
     }
 
     term_shutdown();
