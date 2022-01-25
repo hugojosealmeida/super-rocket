@@ -17,6 +17,14 @@ static void handle_input(Game *g, const TermInput *in, int *running)
         return;
     }
 
+    if (in->help) {
+        game_toggle_help(g);
+        return;
+    }
+
+    if (g->show_help)
+        return;
+
     if (in->theme)
         game_cycle_theme(g);
     if (in->sound)
