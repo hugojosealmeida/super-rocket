@@ -491,6 +491,14 @@ void render_frame(const Game *g)
             draw_text_center(&c, 2, "HULL CRITICAL", theme_color(THEME_BAD));
     }
 
+    if (g->settings.show_fps && g->state != GAME_MENU) {
+        char fps_text[24];
+
+        snprintf(fps_text, sizeof(fps_text), "FPS %3.0f", g->fps);
+        draw_text(&c, c.width - (int)strlen(fps_text), 0, fps_text,
+                  theme_color(THEME_DIM));
+    }
+
     draw_overlay(g, &c);
     if (g->show_help)
         draw_help(g, &c);
