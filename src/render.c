@@ -226,7 +226,19 @@ static void draw_menu(const Game *g, Canvas *c)
     draw_text_center(c, mid + 3, "Fly with ARROWS or WASD.", theme_color(THEME_DIM));
     draw_text_center(c, mid + 4, "Thrust burns fuel. Dodge the asteroids.", theme_color(THEME_DIM));
     draw_text_center(c, mid + 5, "Reach Mars orbit to complete the mission.", theme_color(THEME_DIM));
-    draw_text_center(c, mid + 7, "super-rocket " GAME_VERSION, theme_color(THEME_DIM));
+
+    {
+        char settings_line[96];
+
+        snprintf(settings_line, sizeof(settings_line),
+                 "T theme:%-8s  M sound:%-3s  F fps:%-3s",
+                 theme_name(g->settings.theme),
+                 g->settings.sound ? "on" : "off",
+                 g->settings.show_fps ? "on" : "off");
+        draw_text_center(c, mid + 6, settings_line, theme_color(THEME_DIM));
+    }
+
+    draw_text_center(c, mid + 8, "super-rocket " GAME_VERSION, theme_color(THEME_DIM));
 }
 
 static void draw_help(const Game *g, Canvas *c)
