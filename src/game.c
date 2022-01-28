@@ -56,6 +56,62 @@ void game_save_scores(const Game *g)
     storage_write_ints(".super_rocket_scores", g->best, DIFFICULTY_COUNT);
 }
 
+void game_load_stats(Game *g)
+{
+    int values[GAME_STAT_COUNT];
+    int i;
+
+    g->stats.runs = 0;
+    g->stats.wins = 0;
+    g->stats.deaths = 0;
+    g->stats.asteroids_destroyed = 0;
+    g->stats.pickups_collected = 0;
+    g->stats.lasers_fired = 0;
+    g->stats.best_time = 0;
+    g->stats.total_distance = 0;
+    g->stats.total_fuel_used = 0;
+
+    if (storage_read_ints(".super_rocket_stats", values, GAME_STAT_COUNT) != 0)
+        return;
+
+    g->stats.runs = values[0] < 0 ? 0 : values[0];
+    g->stats.wins = values[1] < 0 ? 0 : values[1];
+    g->stats.deaths = values[2] < 0 ? 0 : values[2];
+    g->stats.asteroids_destroyed = values[3] < 0 ? 0 : values[3];
+    g->stats.pickups_collected = values[4] < 0 ? 0 : values[4];
+    g->stats.lasers_fired = values[5] < 0 ? 0 : values[5];
+    g->stats.best_time = values[6] < 0 ? 0 : values[6];
+    g->stats.total_distance = values[7] < 0 ? 0 : values[7];
+    g->stats.total_fuel_used = values[8] < 0 ? 0 : values[8];
+
+    (void)i;
+}
+
+void game_save_stats(const Game *g)
+{
+    int values[GAME_STAT_COUNT];
+
+    values[0] = g->stats.runs;
+    values[1] = g->stats.wins;
+    values[2] = g->stats.deaths;
+    values[3] = g->stats.asteroids_destroyed;
+    values[4] = g->stats.pickups_collected;
+    values[5] = g->stats.lasers_fired;
+    values[6] = g->stats.best_time;
+    values[7] = g->stats.total_distance;
+    values[8] = g->stats.total_fuel_used;
+
+    storage_write_ints(".super_rocket_stats", values, GAME_STAT_COUNT);
+}
+
+void game_reset_stats(Game *g)
+{
+    int values[GAME_STAT_COUNT] = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+
+    storage_write_ints(".super_rocket_stats", values, GAME_STAT_COUNT);
+    game_load_stats(g);
+}
+
 void game_load_settings(Game *g)
 {
     int values[3];
@@ -137,6 +193,7 @@ void game_init(Game *g, int width, int height)
     init_stars(g);
     game_load_settings(g);
     game_load_scores(g);
+    game_load_stats(g);
 
     game_reset(g);
     g->state = GAME_MENU;

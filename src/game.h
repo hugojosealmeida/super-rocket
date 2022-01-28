@@ -37,6 +37,20 @@ typedef struct {
     int show_fps;
 } Settings;
 
+#define GAME_STAT_COUNT 9
+
+typedef struct {
+    int runs;
+    int wins;
+    int deaths;
+    int asteroids_destroyed;
+    int pickups_collected;
+    int lasers_fired;
+    int best_time;
+    int total_distance;
+    int total_fuel_used;
+} Stats;
+
 typedef struct {
     double x;
     double y;
@@ -93,6 +107,7 @@ typedef struct {
     int new_best;
     unsigned long frame;
     Settings settings;
+    Stats stats;
     double fps;
     int show_help;
 
@@ -116,6 +131,9 @@ void game_load_scores(Game *g);
 void game_save_scores(const Game *g);
 void game_load_settings(Game *g);
 void game_save_settings(const Game *g);
+void game_load_stats(Game *g);
+void game_save_stats(const Game *g);
+void game_reset_stats(Game *g);
 void game_toggle_help(Game *g);
 void game_cycle_theme(Game *g);
 void game_toggle_sound(Game *g);
