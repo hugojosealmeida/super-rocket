@@ -241,6 +241,8 @@ void game_set_difficulty(Game *g, Difficulty difficulty)
 void game_start(Game *g)
 {
     game_reset(g);
+    g->stats.runs++;
+    game_save_stats(g);
     g->state = GAME_PLAYING;
 }
 
