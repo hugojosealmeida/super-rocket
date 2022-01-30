@@ -240,10 +240,15 @@ void game_set_difficulty(Game *g, Difficulty difficulty)
 
 static void record_run(Game *g, int won)
 {
-    if (won)
+    if (won) {
+        int elapsed = (int)g->mission_time;
+
         g->stats.wins++;
-    else
+        if (g->stats.best_time == 0 || elapsed < g->stats.best_time)
+            g->stats.best_time = elapsed;
+    } else {
         g->stats.deaths++;
+    }
 
     g->stats.total_distance += (int)g->player_x;
     g->stats.total_fuel_used += (int)(g->fuel_max - g->fuel);
