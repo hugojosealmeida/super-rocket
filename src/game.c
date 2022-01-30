@@ -238,6 +238,18 @@ void game_set_difficulty(Game *g, Difficulty difficulty)
         g->difficulty = difficulty;
 }
 
+static void record_run(Game *g, int won)
+{
+    if (won)
+        g->stats.wins++;
+    else
+        g->stats.deaths++;
+
+    g->stats.total_distance += (int)g->player_x;
+    g->stats.total_fuel_used += (int)(g->fuel_max - g->fuel);
+    game_save_stats(g);
+}
+
 void game_start(Game *g)
 {
     game_reset(g);
@@ -496,6 +508,7 @@ static void update_player(Game *g)
                 g->new_best = 1;
                 game_save_scores(g);
             }
+            record_run(g, 1);
             g->state = GAME_WON;
         }
     }
@@ -598,6 +611,7 @@ static void update_asteroids(Game *g)
                 g->hull = 0.0;
                 g->score = 0;
                 explode_rocket(g);
+                record_run(g, 0);
                 g->state = GAME_DEAD;
             }
         }
