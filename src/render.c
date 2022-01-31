@@ -238,7 +238,23 @@ static void draw_menu(const Game *g, Canvas *c)
         draw_text_center(c, mid + 6, settings_line, theme_color(THEME_DIM));
     }
 
-    draw_text_center(c, mid + 8, "super-rocket " GAME_VERSION, theme_color(THEME_DIM));
+    if (g->stats.runs > 0) {
+        char stats_line[96];
+        char best_text[16];
+
+        if (g->stats.best_time > 0)
+            util_format_time(best_text, sizeof(best_text), (double)g->stats.best_time);
+        else
+            snprintf(best_text, sizeof(best_text), "--:--");
+
+        snprintf(stats_line, sizeof(stats_line),
+                 "RUNS %d   WINS %d   BEST %s   DOWNED %d",
+                 g->stats.runs, g->stats.wins, best_text,
+                 g->stats.asteroids_destroyed);
+        draw_text_center(c, mid + 8, stats_line, theme_color(THEME_DIM));
+    }
+
+    draw_text_center(c, mid + 10, "super-rocket " GAME_VERSION, theme_color(THEME_DIM));
 }
 
 static void draw_help(const Game *g, Canvas *c)
