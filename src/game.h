@@ -3,6 +3,9 @@
 
 #define GAME_MAX_ASTEROIDS 64
 #define GAME_MAX_PARTICLES 300
+#define GAME_MAX_PICKUPS   12
+#define GAME_MAX_LASERS    24
+#define GAME_MAX_UFOS      6
 #define GAME_MAX_STARS    400
 
 #define GAME_WORLD_LENGTH 1800.0
@@ -70,6 +73,20 @@ typedef struct {
     unsigned char color;
 } Particle;
 
+typedef enum {
+    PICKUP_FUEL,
+    PICKUP_REPAIR,
+    PICKUP_SHIELD
+} PickupType;
+
+typedef struct {
+    double x;
+    double y;
+    double bob;
+    PickupType type;
+    int alive;
+} Pickup;
+
 typedef struct {
     double x;
     int y;
@@ -99,6 +116,8 @@ typedef struct {
     double invuln;
     double shake;
     double spawn_timer;
+    double pickup_timer;
+    double shield;
     double gravity_scale;
     double spawn_interval;
 
@@ -113,6 +132,7 @@ typedef struct {
 
     Asteroid asteroids[GAME_MAX_ASTEROIDS];
     Particle particles[GAME_MAX_PARTICLES];
+    Pickup pickups[GAME_MAX_PICKUPS];
     Star stars[GAME_MAX_STARS];
     int star_count;
 } Game;

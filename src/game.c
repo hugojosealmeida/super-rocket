@@ -216,6 +216,8 @@ void game_reset(Game *g)
     g->invuln = 0.0;
     g->shake = 0.0;
     g->spawn_timer = 3.0;
+    g->pickup_timer = 5.0;
+    g->shield = 0.0;
     g->gravity_scale = config->gravity;
     g->spawn_interval = config->spawn_interval;
     g->score = 0;
@@ -230,6 +232,9 @@ void game_reset(Game *g)
 
     for (i = 0; i < GAME_MAX_PARTICLES; i++)
         g->particles[i].life = 0.0;
+
+    for (i = 0; i < GAME_MAX_PICKUPS; i++)
+        g->pickups[i].alive = 0;
 }
 
 void game_set_difficulty(Game *g, Difficulty difficulty)
