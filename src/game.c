@@ -403,6 +403,34 @@ static void bounce_off_earth(Game *g)
     g->player_vy *= 0.45;
 }
 
+static void spawn_pickup(Game *g);
+
+static void update_pickups(Game *g)
+{
+    int i;
+
+    g->pickup_timer -= DT;
+    if (g->pickup_timer <= 0.0) {
+        spawn_pickup(g);
+        g->pickup_timer = 6.0 + rng_double() * 5.0;
+    }
+
+    for (i = 0; i < GAME_MAX_PICKUPS; i++) {
+        Pickup *p = &g->pickups[i];
+
+        if (!p->alive)
+            continue;
+
+        p->x -= 2.0 * DT;
+        p->bob += DT * 4.0;
+
+        if (p->x < g->camera_x - 30.0) {
+            p->alive = 0;
+            continue;
+        }
+    }
+}
+
 static void update_player(Game *g)
 {
     double ax = 0.0;
@@ -566,6 +594,42 @@ static void spawn_asteroid(Game *g)
     g->asteroids[slot].alive = 1;
 }
 
+static void spawn_pickup(Game *g)
+{
+    int i;
+    int slot = -1;
+    double x;
+    double y;
+    int roll;
+
+    for (i = 0; i < GAME_MAX_PICKUPS; i++) {
+        if (!g->pickups[i].alive) {
+            slot = i;
+            break;
+        }
+    }
+
+    if (slot < 0)
+        return;
+
+    x = g->camera_x + g->width + 20.0 + rng_double() * 220.0;
+    y = 3.0 + rng_double() * (double)(g->play_height - 6);
+
+    if (util_distance(x, y, 0.0, play_mid(g)) < GAME_EARTH_RADIUS + 8.0)
+        return;
+    if (util_distance(x, y, GAME_WORLD_LENGTH, play_mid(g)) < GAME_MARS_RADIUS + 8.0)
+        return;
+
+    roll = rng_range(0, 100);
+    g->pickups[slot].type = roll < 50 ? PICKUP_FUEL
+                           : roll < 75 ? PICKUP_REPAIR
+                                       : PICKUP_SHIELD;
+    g->pickups[slot].x = x;
+    g->pickups[slot].y = y;
+    g->pickups[slot].bob = rng_double() * 6.28;
+    g->pickups[slot].alive = 1;
+}
+
 static void update_asteroids(Game *g)
 {
     int i;
@@ -640,6 +704,7 @@ void game_update(Game *g)
         update_player(g);
         if (g->state == GAME_PLAYING)
             update_asteroids(g);
+        update_pickups(g);
         update_particles(g);
     } else if (g->state == GAME_WON || g->state == GAME_DEAD) {
         update_particles(g);
