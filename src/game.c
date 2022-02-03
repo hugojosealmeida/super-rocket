@@ -428,6 +428,42 @@ static void update_pickups(Game *g)
             p->alive = 0;
             continue;
         }
+
+        if (util_distance(p->x, p->y, g->player_x, g->player_y) < 2.4) {
+            unsigned char color;
+            char ch;
+            int j;
+
+            switch (p->type) {
+            case PICKUP_FUEL:
+                g->fuel = util_clamp(g->fuel + 30.0, 0.0, g->fuel_max);
+                color = 96;
+                ch = 'F';
+                break;
+            case PICKUP_REPAIR:
+                g->hull = util_clamp(g->hull + 25.0, 0.0, GAME_HULL_MAX);
+                color = 92;
+                ch = '+';
+                break;
+            default:
+                g->shield = util_clamp(g->shield + 100.0, 0.0, 100.0);
+                color = 94;
+                ch = 'O';
+                break;
+            }
+
+            for (j = 0; j < 8; j++) {
+                double angle = rng_double() * 6.283185307179586;
+                double speed = 2.0 + rng_double() * 6.0;
+
+                spawn_particle(g, p->x, p->y,
+                               cos(angle) * speed, sin(angle) * speed,
+                               0.3 + rng_double() * 0.4, ch, color);
+            }
+
+            g->pickups[i].alive = 0;
+            g->stats.pickups_collected++;
+        }
     }
 }
 
