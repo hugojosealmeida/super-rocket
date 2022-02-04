@@ -172,6 +172,33 @@ static void draw_orbit(Canvas *c, double center_x, double center_y, double radiu
     }
 }
 
+static void draw_pickup(Canvas *c, const Pickup *p, double camera_x, int shx, int shy)
+{
+    char ch;
+    unsigned char color;
+    int x = (int)(p->x - camera_x + 0.5) + shx;
+    int y = (int)(p->y + sin(p->bob) * 0.6 + 0.5) + shy;
+
+    switch (p->type) {
+    case PICKUP_FUEL:
+        ch = 'F';
+        color = theme_color(THEME_LABEL);
+        break;
+    case PICKUP_REPAIR:
+        ch = '+';
+        color = theme_color(THEME_GOOD);
+        break;
+    default:
+        ch = 'O';
+        color = theme_color(THEME_TITLE);
+        break;
+    }
+
+    put_cell(c, x, y, ch, color);
+    put_cell(c, x - 1, y, '[', theme_color(THEME_DIM));
+    put_cell(c, x + 1, y, ']', theme_color(THEME_DIM));
+}
+
 static void draw_rocket(Canvas *c, int cx, int cy, double ax, double ay, char flame)
 {
     static const char *sprite[] = {
@@ -499,6 +526,11 @@ void render_frame(const Game *g)
 
         {
             int i;
+
+            for (i = 0; i < GAME_MAX_PICKUPS; i++) {
+                if (g->pickups[i].alive)
+                    draw_pickup(&c, &g->pickups[i], g->camera_x, shx, shy);
+            }
 
             for (i = 0; i < GAME_MAX_PARTICLES; i++) {
                 if (g->particles[i].life <= 0.0)
