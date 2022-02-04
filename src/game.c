@@ -702,11 +702,20 @@ static void update_asteroids(Game *g)
 
         if (dx * dx + dy * dy < hit_radius * hit_radius) {
             int j;
+            double damage = (a->radius == 2) ? 40.0 : 24.0;
 
             a->alive = 0;
-            g->hull -= (a->radius == 2) ? 40.0 : 24.0;
             g->invuln = 1.2;
             g->shake = 0.5;
+
+            if (g->shield > 0.0) {
+                double absorbed = g->shield < damage ? g->shield : damage;
+
+                g->shield -= absorbed;
+                damage -= absorbed;
+            }
+
+            g->hull -= damage;
 
             for (j = 0; j < 10; j++) {
                 double angle = rng_double() * 6.283185307179586;
@@ -719,6 +728,7 @@ static void update_asteroids(Game *g)
 
             if (g->hull <= 0.0) {
                 g->hull = 0.0;
+                g->shield = 0.0;
                 g->score = 0;
                 explode_rocket(g);
                 record_run(g, 0);
