@@ -375,6 +375,7 @@ static void draw_hud(const Game *g, Canvas *c)
 {
     char hull_bar[16];
     char fuel_bar[16];
+    char shield_bar[16];
     char time_text[16];
     char line[160];
     char *fuel_pos;
@@ -389,11 +390,13 @@ static void draw_hud(const Game *g, Canvas *c)
 
     make_bar(hull_bar, g->hull, GAME_HULL_MAX, 10);
     make_bar(fuel_bar, g->fuel, g->fuel_max, 10);
+    make_bar(shield_bar, g->shield, 100.0, 5);
     speed = sqrt(g->player_vx * g->player_vx + g->player_vy * g->player_vy);
 
     snprintf(line, sizeof(line),
-             "HULL [%s] %3.0f%%   FUEL [%s] %3.0f%%   VEL %4.1f",
-             hull_bar, hull_ratio * 100.0, fuel_bar, fuel_ratio * 100.0, speed);
+             "HULL [%s] %3.0f%%  FUEL [%s] %3.0f%%  SHD [%s] %3.0f%%  VEL %4.1f",
+             hull_bar, hull_ratio * 100.0, fuel_bar, fuel_ratio * 100.0,
+             shield_bar, g->shield, speed);
     draw_text(c, 0, row, line, theme_color(THEME_TEXT));
 
     draw_text(c, 0, row, "HULL", theme_color(THEME_LABEL));
@@ -410,6 +413,16 @@ static void draw_hud(const Game *g, Canvas *c)
         for (x = 0; x < 10; x++)
             put_cell(c, fx + 6 + x, row, fuel_bar[x],
                      fuel_bar[x] == '#' ? theme_color(THEME_LABEL) : theme_color(THEME_DIM));
+    }
+
+    fuel_pos = strstr(line, "SHD [");
+    if (fuel_pos != NULL) {
+        int fx = (int)(fuel_pos - line);
+
+        draw_text(c, fx, row, "SHD", theme_color(THEME_TITLE));
+        for (x = 0; x < 5; x++)
+            put_cell(c, fx + 5 + x, row, shield_bar[x],
+                     shield_bar[x] == '#' ? theme_color(THEME_TITLE) : theme_color(THEME_DIM));
     }
 
     util_format_time(time_text, sizeof(time_text), g->mission_time);
