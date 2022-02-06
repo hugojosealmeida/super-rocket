@@ -89,6 +89,15 @@ typedef struct {
 
 typedef struct {
     double x;
+    double y;
+    double vx;
+    double vy;
+    double life;
+    int alive;
+} Laser;
+
+typedef struct {
+    double x;
     int y;
     char ch;
     double factor;
@@ -118,6 +127,8 @@ typedef struct {
     double spawn_timer;
     double pickup_timer;
     double shield;
+    double fire_cooldown;
+    int weapon_level;
     double gravity_scale;
     double spawn_interval;
 
@@ -133,6 +144,7 @@ typedef struct {
     Asteroid asteroids[GAME_MAX_ASTEROIDS];
     Particle particles[GAME_MAX_PARTICLES];
     Pickup pickups[GAME_MAX_PICKUPS];
+    Laser lasers[GAME_MAX_LASERS];
     Star stars[GAME_MAX_STARS];
     int star_count;
 } Game;
@@ -143,6 +155,7 @@ void game_start(Game *g);
 void game_update(Game *g);
 
 void game_thrust(Game *g, int up, int down, int left, int right);
+void game_fire(Game *g);
 void game_pause(Game *g);
 void game_resume(Game *g);
 void game_to_menu(Game *g);
