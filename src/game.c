@@ -305,6 +305,37 @@ void game_thrust(Game *g, int up, int down, int left, int right)
         g->thrust[3] = THRUST_MEMORY;
 }
 
+void game_fire(Game *g)
+{
+    int i;
+    int slot = -1;
+
+    if (g->state != GAME_PLAYING || g->show_help)
+        return;
+    if (g->fire_cooldown > 0.0)
+        return;
+
+    for (i = 0; i < GAME_MAX_LASERS; i++) {
+        if (!g->lasers[i].alive) {
+            slot = i;
+            break;
+        }
+    }
+
+    if (slot < 0)
+        return;
+
+    g->lasers[slot].x = g->player_x + 5.0;
+    g->lasers[slot].y = g->player_y;
+    g->lasers[slot].vx = 70.0;
+    g->lasers[slot].vy = 0.0;
+    g->lasers[slot].life = 1.4;
+    g->lasers[slot].alive = 1;
+
+    g->fire_cooldown = 0.18;
+    g->stats.lasers_fired++;
+}
+
 static void spawn_particle(Game *g, double x, double y, double vx, double vy,
                            double life, char ch, unsigned char color)
 {
@@ -562,6 +593,10 @@ static void update_player(Game *g)
 
     if (g->invuln > 0.0)
         g->invuln -= DT;
+    if (g->fire_cooldown > 0.0)
+        g->fire_cooldown -= DT;
+    if (g->fire_cooldown < 0.0)
+        g->fire_cooldown = 0.0;
     if (g->shake > 0.0)
         g->shake -= DT * 2.0;
 

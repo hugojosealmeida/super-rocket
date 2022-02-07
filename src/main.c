@@ -52,6 +52,8 @@ static void handle_input(Game *g, const TermInput *in, int *running)
             game_start(g);
         } else {
             game_thrust(g, in->up, in->down, in->left, in->right);
+            if (in->fire)
+                game_fire(g);
         }
         break;
 
