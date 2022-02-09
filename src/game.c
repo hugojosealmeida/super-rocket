@@ -688,6 +688,7 @@ static void spawn_asteroid(Game *g)
     g->asteroids[slot].vx = -(3.0 + rng_double() * 8.0);
     g->asteroids[slot].vy = (rng_double() - 0.5) * 4.0;
     g->asteroids[slot].radius = radius;
+    g->asteroids[slot].hp = (radius == 2) ? 3 : 1;
     g->asteroids[slot].alive = 1;
 }
 

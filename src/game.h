@@ -60,6 +60,7 @@ typedef struct {
     double vx;
     double vy;
     int radius;
+    int hp;
     int alive;
 } Asteroid;
 
