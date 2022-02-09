@@ -441,6 +441,27 @@ static void bounce_off_earth(Game *g)
 
 static void spawn_pickup(Game *g);
 
+static void update_lasers(Game *g)
+{
+    int i;
+
+    for (i = 0; i < GAME_MAX_LASERS; i++) {
+        Laser *l = &g->lasers[i];
+
+        if (!l->alive)
+            continue;
+
+        l->x += l->vx * DT;
+        l->y += l->vy * DT;
+        l->life -= DT;
+
+        if (l->life <= 0.0 || l->x > g->camera_x + g->width + 20.0) {
+            l->alive = 0;
+            continue;
+        }
+    }
+}
+
 static void update_pickups(Game *g)
 {
     int i;
@@ -790,6 +811,7 @@ void game_update(Game *g)
         update_player(g);
         if (g->state == GAME_PLAYING)
             update_asteroids(g);
+        update_lasers(g);
         update_pickups(g);
         update_particles(g);
     } else if (g->state == GAME_WON || g->state == GAME_DEAD) {
