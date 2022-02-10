@@ -459,6 +459,49 @@ static void update_lasers(Game *g)
             l->alive = 0;
             continue;
         }
+
+        {
+            int a;
+
+            for (a = 0; a < GAME_MAX_ASTEROIDS; a++) {
+                Asteroid *rock = &g->asteroids[a];
+                double hit_radius;
+
+                if (!rock->alive)
+                    continue;
+
+                hit_radius = (double)rock->radius * 1.2 + 0.8;
+                if (util_distance(l->x, l->y, rock->x, rock->y) > hit_radius)
+                    continue;
+
+                l->alive = 0;
+                rock->hp--;
+
+                if (rock->hp <= 0) {
+                    int j;
+
+                    rock->alive = 0;
+                    g->stats.asteroids_destroyed++;
+                    g->score += rock->radius == 2 ? 100 : 50;
+                    g->shake = 0.35;
+
+                    for (j = 0; j < 14; j++) {
+                        double angle = rng_double() * 6.283185307179586;
+                        double speed = 4.0 + rng_double() * 10.0;
+
+                        spawn_particle(g, rock->x, rock->y,
+                                       cos(angle) * speed, sin(angle) * speed,
+                                       0.3 + rng_double() * 0.5,
+                                       (rng_range(0, 2) == 0) ? '*' : 'o',
+                                       (unsigned char)(rng_range(0, 2) ? 33 : 93));
+                    }
+                } else {
+                    spawn_particle(g, l->x, l->y, -2.0, 0.0, 0.2, '*', 97);
+                }
+
+                break;
+            }
+        }
     }
 }
 
@@ -637,7 +680,7 @@ static void update_player(Game *g)
             if (bonus < 0.0)
                 bonus = 0.0;
 
-            g->score = (int)(g->hull * 8.0 + g->fuel * 6.0 + bonus * 3.0);
+            g->score += (int)(g->hull * 8.0 + g->fuel * 6.0 + bonus * 3.0);
             if (g->score > g->best[g->difficulty]) {
                 g->best[g->difficulty] = g->score;
                 g->new_best = 1;
