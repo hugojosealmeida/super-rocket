@@ -540,6 +540,20 @@ void render_frame(const Game *g)
         {
             int i;
 
+            for (i = 0; i < GAME_MAX_LASERS; i++) {
+                if (!g->lasers[i].alive)
+                    continue;
+
+                if (fabs(g->lasers[i].vy) > fabs(g->lasers[i].vx))
+                    put_cell(&c, (int)(g->lasers[i].x - g->camera_x + 0.5) + shx,
+                             (int)(g->lasers[i].y + 0.5) + shy, '|',
+                             theme_color(THEME_STAR_ACCENT));
+                else
+                    put_cell(&c, (int)(g->lasers[i].x - g->camera_x + 0.5) + shx,
+                             (int)(g->lasers[i].y + 0.5) + shy, '-',
+                             theme_color(THEME_STAR_ACCENT));
+            }
+
             for (i = 0; i < GAME_MAX_PICKUPS; i++) {
                 if (g->pickups[i].alive)
                     draw_pickup(&c, &g->pickups[i], g->camera_x, shx, shy);
