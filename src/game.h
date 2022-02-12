@@ -6,6 +6,8 @@
 #define GAME_MAX_PICKUPS   12
 #define GAME_MAX_LASERS    24
 #define GAME_MAX_UFOS      6
+#define GAME_MAX_SHOTS     32
+#define GAME_MAX_SECTORS   3
 #define GAME_MAX_STARS    400
 
 #define GAME_WORLD_LENGTH 1800.0
@@ -99,6 +101,26 @@ typedef struct {
 
 typedef struct {
     double x;
+    double y;
+    double vx;
+    double vy;
+    double fire_timer;
+    double wobble;
+    int hp;
+    int alive;
+} Ufo;
+
+typedef struct {
+    double x;
+    double y;
+    double vx;
+    double vy;
+    double life;
+    int alive;
+} EnemyShot;
+
+typedef struct {
+    double x;
     int y;
     char ch;
     double factor;
@@ -130,6 +152,8 @@ typedef struct {
     double shield;
     double fire_cooldown;
     int weapon_level;
+    double ufo_timer;
+    int sector;
     double gravity_scale;
     double spawn_interval;
 
@@ -146,6 +170,8 @@ typedef struct {
     Particle particles[GAME_MAX_PARTICLES];
     Pickup pickups[GAME_MAX_PICKUPS];
     Laser lasers[GAME_MAX_LASERS];
+    Ufo ufos[GAME_MAX_UFOS];
+    EnemyShot shots[GAME_MAX_SHOTS];
     Star stars[GAME_MAX_STARS];
     int star_count;
 } Game;

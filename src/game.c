@@ -220,6 +220,8 @@ void game_reset(Game *g)
     g->shield = 0.0;
     g->fire_cooldown = 0.0;
     g->weapon_level = 1;
+    g->ufo_timer = 9.0;
+    g->sector = 0;
     g->gravity_scale = config->gravity;
     g->spawn_interval = config->spawn_interval;
     g->score = 0;
@@ -240,6 +242,12 @@ void game_reset(Game *g)
 
     for (i = 0; i < GAME_MAX_LASERS; i++)
         g->lasers[i].alive = 0;
+
+    for (i = 0; i < GAME_MAX_UFOS; i++)
+        g->ufos[i].alive = 0;
+
+    for (i = 0; i < GAME_MAX_SHOTS; i++)
+        g->shots[i].alive = 0;
 }
 
 void game_set_difficulty(Game *g, Difficulty difficulty)
