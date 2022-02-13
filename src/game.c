@@ -449,6 +449,59 @@ static void bounce_off_earth(Game *g)
 
 static void spawn_pickup(Game *g);
 
+static void spawn_ufo(Game *g)
+{
+    int i;
+    int slot = -1;
+
+    if (g->player_x < 300.0)
+        return;
+
+    for (i = 0; i < GAME_MAX_UFOS; i++) {
+        if (!g->ufos[i].alive) {
+            slot = i;
+            break;
+        }
+    }
+
+    if (slot < 0)
+        return;
+
+    g->ufos[slot].x = g->camera_x + g->width + 15.0;
+    g->ufos[slot].y = 4.0 + rng_double() * (double)(g->play_height - 9);
+    g->ufos[slot].vx = -5.0 - rng_double() * 3.0;
+    g->ufos[slot].vy = 0.0;
+    g->ufos[slot].fire_timer = 1.6 + rng_double() * 1.5;
+    g->ufos[slot].wobble = rng_double() * 6.283185307179586;
+    g->ufos[slot].hp = 2 + g->sector / 2;
+    g->ufos[slot].alive = 1;
+}
+
+static void update_ufos(Game *g)
+{
+    int i;
+
+    g->ufo_timer -= DT;
+    if (g->ufo_timer <= 0.0) {
+        spawn_ufo(g);
+        g->ufo_timer = 11.0 + rng_double() * 7.0 - (double)g->sector * 1.5;
+        if (g->ufo_timer < 5.0)
+            g->ufo_timer = 5.0;
+    }
+
+    for (i = 0; i < GAME_MAX_UFOS; i++) {
+        Ufo *u = &g->ufos[i];
+
+        if (!u->alive)
+            continue;
+
+        if (u->x < g->camera_x - 20.0) {
+            u->alive = 0;
+            continue;
+        }
+    }
+}
+
 static void update_lasers(Game *g)
 {
     int i;
@@ -863,6 +916,7 @@ void game_update(Game *g)
         update_player(g);
         if (g->state == GAME_PLAYING)
             update_asteroids(g);
+        update_ufos(g);
         update_lasers(g);
         update_pickups(g);
         update_particles(g);
