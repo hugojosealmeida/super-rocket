@@ -477,6 +477,33 @@ static void spawn_ufo(Game *g)
     g->ufos[slot].alive = 1;
 }
 
+static void spawn_enemy_shot(Game *g, double x, double y, double tx, double ty)
+{
+    int i;
+    double dx;
+    double dy;
+    double len;
+    double speed = 16.0 + (double)g->sector * 2.0;
+
+    for (i = 0; i < GAME_MAX_SHOTS; i++) {
+        if (!g->shots[i].alive) {
+            dx = tx - x;
+            dy = ty - y;
+            len = sqrt(dx * dx + dy * dy);
+            if (len < 0.001)
+                return;
+
+            g->shots[i].x = x;
+            g->shots[i].y = y;
+            g->shots[i].vx = dx / len * speed;
+            g->shots[i].vy = dy / len * speed;
+            g->shots[i].life = 4.0;
+            g->shots[i].alive = 1;
+            return;
+        }
+    }
+}
+
 static void update_ufos(Game *g)
 {
     int i;
@@ -503,6 +530,16 @@ static void update_ufos(Game *g)
             u->y = 2.0;
         if (u->y > g->play_height - 3.0)
             u->y = g->play_height - 3.0;
+
+        u->fire_timer -= DT;
+        if (u->fire_timer <= 0.0) {
+            spawn_enemy_shot(g, u->x - 3.0, u->y,
+                             g->player_x, g->player_y);
+            u->fire_timer = 2.4 - (double)g->sector * 0.2 +
+                            rng_double() * 0.8;
+            if (u->fire_timer < 0.9)
+                u->fire_timer = 0.9;
+        }
 
         if (u->x < g->camera_x - 20.0) {
             u->alive = 0;
