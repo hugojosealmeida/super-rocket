@@ -495,6 +495,15 @@ static void update_ufos(Game *g)
         if (!u->alive)
             continue;
 
+        u->x += u->vx * DT;
+        u->wobble += DT * 2.4;
+        u->y += sin(u->wobble) * 5.0 * DT;
+
+        if (u->y < 2.0)
+            u->y = 2.0;
+        if (u->y > g->play_height - 3.0)
+            u->y = g->play_height - 3.0;
+
         if (u->x < g->camera_x - 20.0) {
             u->alive = 0;
             continue;
