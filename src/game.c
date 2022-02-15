@@ -548,6 +548,28 @@ static void update_ufos(Game *g)
     }
 }
 
+static void update_shots(Game *g)
+{
+    int i;
+
+    for (i = 0; i < GAME_MAX_SHOTS; i++) {
+        EnemyShot *shot = &g->shots[i];
+
+        if (!shot->alive)
+            continue;
+
+        shot->x += shot->vx * DT;
+        shot->y += shot->vy * DT;
+        shot->life -= DT;
+
+        if (shot->life <= 0.0 || shot->y < -2.0 ||
+            shot->y > g->play_height + 2.0 ||
+            shot->x < g->camera_x - 40.0) {
+            shot->alive = 0;
+        }
+    }
+}
+
 static void update_lasers(Game *g)
 {
     int i;
@@ -963,6 +985,7 @@ void game_update(Game *g)
         if (g->state == GAME_PLAYING)
             update_asteroids(g);
         update_ufos(g);
+        update_shots(g);
         update_lasers(g);
         update_pickups(g);
         update_particles(g);
