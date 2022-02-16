@@ -566,6 +566,44 @@ static void update_shots(Game *g)
             shot->y > g->play_height + 2.0 ||
             shot->x < g->camera_x - 40.0) {
             shot->alive = 0;
+            continue;
+        }
+
+        if (g->invuln <= 0.0 &&
+            util_distance(shot->x, shot->y, g->player_x, g->player_y) < 1.7) {
+            double damage = 14.0;
+            int j;
+
+            shot->alive = 0;
+            g->invuln = 0.8;
+            g->shake = 0.45;
+
+            if (g->shield > 0.0) {
+                double absorbed = g->shield < damage ? g->shield : damage;
+
+                g->shield -= absorbed;
+                damage -= absorbed;
+            }
+
+            g->hull -= damage;
+
+            for (j = 0; j < 8; j++) {
+                double angle = rng_double() * 6.283185307179586;
+                double speed = 2.0 + rng_double() * 7.0;
+
+                spawn_particle(g, g->player_x, g->player_y,
+                               cos(angle) * speed, sin(angle) * speed,
+                               0.25 + rng_double() * 0.35, '*', 95);
+            }
+
+            if (g->hull <= 0.0) {
+                g->hull = 0.0;
+                g->shield = 0.0;
+                g->score = 0;
+                explode_rocket(g);
+                record_run(g, 0);
+                g->state = GAME_DEAD;
+            }
         }
     }
 }
