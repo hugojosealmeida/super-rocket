@@ -42,7 +42,7 @@ typedef struct {
     int show_fps;
 } Settings;
 
-#define GAME_STAT_COUNT 9
+#define GAME_STAT_COUNT 10
 
 typedef struct {
     int runs;
@@ -54,6 +54,7 @@ typedef struct {
     int best_time;
     int total_distance;
     int total_fuel_used;
+    int ufos_destroyed;
 } Stats;
 
 typedef struct {

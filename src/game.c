@@ -70,6 +70,7 @@ void game_load_stats(Game *g)
     g->stats.best_time = 0;
     g->stats.total_distance = 0;
     g->stats.total_fuel_used = 0;
+    g->stats.ufos_destroyed = 0;
 
     if (storage_read_ints(".super_rocket_stats", values, GAME_STAT_COUNT) != 0)
         return;
@@ -83,6 +84,7 @@ void game_load_stats(Game *g)
     g->stats.best_time = values[6] < 0 ? 0 : values[6];
     g->stats.total_distance = values[7] < 0 ? 0 : values[7];
     g->stats.total_fuel_used = values[8] < 0 ? 0 : values[8];
+    g->stats.ufos_destroyed = values[9] < 0 ? 0 : values[9];
 
     (void)i;
 }
@@ -100,13 +102,14 @@ void game_save_stats(const Game *g)
     values[6] = g->stats.best_time;
     values[7] = g->stats.total_distance;
     values[8] = g->stats.total_fuel_used;
+    values[9] = g->stats.ufos_destroyed;
 
     storage_write_ints(".super_rocket_stats", values, GAME_STAT_COUNT);
 }
 
 void game_reset_stats(Game *g)
 {
-    int values[GAME_STAT_COUNT] = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+    int values[GAME_STAT_COUNT] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
     storage_write_ints(".super_rocket_stats", values, GAME_STAT_COUNT);
     game_load_stats(g);
