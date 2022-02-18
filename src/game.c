@@ -632,6 +632,7 @@ static void update_lasers(Game *g)
 
         {
             int a;
+            int consumed = 0;
 
             for (a = 0; a < GAME_MAX_ASTEROIDS; a++) {
                 Asteroid *rock = &g->asteroids[a];
@@ -645,6 +646,7 @@ static void update_lasers(Game *g)
                     continue;
 
                 l->alive = 0;
+                consumed = 1;
                 rock->hp--;
 
                 if (rock->hp <= 0) {
@@ -670,6 +672,46 @@ static void update_lasers(Game *g)
                 }
 
                 break;
+            }
+
+            if (!consumed) {
+                int u;
+
+                for (u = 0; u < GAME_MAX_UFOS; u++) {
+                    Ufo *ship = &g->ufos[u];
+
+                    if (!ship->alive)
+                        continue;
+                    if (util_distance(l->x, l->y, ship->x, ship->y) > 3.0)
+                        continue;
+
+                    l->alive = 0;
+                    ship->hp--;
+
+                    if (ship->hp <= 0) {
+                        int j;
+
+                        ship->alive = 0;
+                        g->stats.ufos_destroyed++;
+                        g->score += 200;
+                        g->shake = 0.5;
+
+                        for (j = 0; j < 20; j++) {
+                            double angle = rng_double() * 6.283185307179586;
+                            double speed = 5.0 + rng_double() * 12.0;
+
+                            spawn_particle(g, ship->x, ship->y,
+                                           cos(angle) * speed, sin(angle) * speed,
+                                           0.4 + rng_double() * 0.5,
+                                           (rng_range(0, 2) == 0) ? '*' : '+',
+                                           94);
+                        }
+                    } else {
+                        spawn_particle(g, l->x, l->y, -2.0, 0.0, 0.2, '*', 97);
+                    }
+
+                    break;
+                }
             }
         }
     }
