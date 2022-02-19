@@ -199,6 +199,28 @@ static void draw_pickup(Canvas *c, const Pickup *p, double camera_x, int shx, in
     put_cell(c, x + 1, y, ']', theme_color(THEME_DIM));
 }
 
+static void draw_ufo(Canvas *c, const Ufo *u, double camera_x, int shx, int shy)
+{
+    static const char *sprite[] = {
+        "  ___  ",
+        " /o o\\ ",
+        " \\___/ "
+    };
+    static const unsigned char colors[] = { 96, 94, 96 };
+    int cx = (int)(u->x - camera_x + 0.5) + shx;
+    int cy = (int)(u->y + 0.5) + shy;
+    int row, col;
+
+    for (row = 0; row < 3; row++) {
+        for (col = 0; col < 7; col++) {
+            char ch = sprite[row][col];
+
+            if (ch != ' ')
+                put_cell(c, cx - 3 + col, cy - 1 + row, ch, colors[row]);
+        }
+    }
+}
+
 static void draw_rocket(Canvas *c, int cx, int cy, double ax, double ay, char flame)
 {
     static const char *sprite[] = {
@@ -539,6 +561,11 @@ void render_frame(const Game *g)
 
         {
             int i;
+
+            for (i = 0; i < GAME_MAX_UFOS; i++) {
+                if (g->ufos[i].alive)
+                    draw_ufo(&c, &g->ufos[i], g->camera_x, shx, shy);
+            }
 
             for (i = 0; i < GAME_MAX_LASERS; i++) {
                 if (!g->lasers[i].alive)
