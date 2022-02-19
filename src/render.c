@@ -586,6 +586,15 @@ void render_frame(const Game *g)
                     draw_pickup(&c, &g->pickups[i], g->camera_x, shx, shy);
             }
 
+            for (i = 0; i < GAME_MAX_SHOTS; i++) {
+                if (!g->shots[i].alive)
+                    continue;
+
+                put_cell(&c, (int)(g->shots[i].x - g->camera_x + 0.5) + shx,
+                         (int)(g->shots[i].y + 0.5) + shy, 'o',
+                         theme_color(THEME_BAD));
+            }
+
             for (i = 0; i < GAME_MAX_PARTICLES; i++) {
                 if (g->particles[i].life <= 0.0)
                     continue;
