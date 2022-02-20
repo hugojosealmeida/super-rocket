@@ -155,6 +155,7 @@ typedef struct {
     int weapon_level;
     double ufo_timer;
     int sector;
+    double sector_banner;
     double gravity_scale;
     double spawn_interval;
 
@@ -200,5 +201,6 @@ void game_cycle_theme(Game *g);
 void game_toggle_sound(Game *g);
 void game_toggle_fps(Game *g);
 const char *game_difficulty_name(Difficulty difficulty);
+const char *game_sector_name(int sector);
 
 #endif

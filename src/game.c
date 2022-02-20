@@ -34,6 +34,21 @@ static const char *DIFFICULTY_NAMES[DIFFICULTY_COUNT] = {
     "EASY", "NORMAL", "HARD"
 };
 
+static const char *SECTOR_NAMES[GAME_MAX_SECTORS] = {
+    "EARTH DEPARTURE", "DEEP SPACE", "MARS APPROACH"
+};
+
+static const double SECTOR_LIMITS[GAME_MAX_SECTORS] = {
+    620.0, 1240.0, GAME_WORLD_LENGTH
+};
+
+const char *game_sector_name(int sector)
+{
+    if (sector < 0 || sector >= GAME_MAX_SECTORS)
+        return SECTOR_NAMES[0];
+    return SECTOR_NAMES[sector];
+}
+
 const char *game_difficulty_name(Difficulty difficulty)
 {
     if (difficulty < 0 || difficulty >= DIFFICULTY_COUNT)
@@ -225,6 +240,7 @@ void game_reset(Game *g)
     g->weapon_level = 1;
     g->ufo_timer = 9.0;
     g->sector = 0;
+    g->sector_banner = 2.5;
     g->gravity_scale = config->gravity;
     g->spawn_interval = config->spawn_interval;
     g->score = 0;
@@ -883,6 +899,22 @@ static void update_player(Game *g)
         target = GAME_WORLD_LENGTH - g->width + 20.0;
 
     g->camera_x += (target - g->camera_x) * 0.15;
+
+    {
+        int sector = 0;
+
+        while (sector < GAME_MAX_SECTORS - 1 && g->player_x > SECTOR_LIMITS[sector])
+            sector++;
+
+        if (sector != g->sector) {
+            g->sector = sector;
+            g->sector_banner = 2.5;
+            g->score += 150 * sector;
+        }
+    }
+
+    if (g->sector_banner > 0.0)
+        g->sector_banner -= DT;
 
     {
         if (util_distance(g->player_x, g->player_y, GAME_WORLD_LENGTH, play_mid(g)) <
