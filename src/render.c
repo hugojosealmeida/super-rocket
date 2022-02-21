@@ -607,6 +607,14 @@ void render_frame(const Game *g)
         draw_menu(g, &c);
     }
 
+    if (g->state == GAME_PLAYING && g->sector_banner > 0.0) {
+        char banner[64];
+
+        snprintf(banner, sizeof(banner), "SECTOR %d  -  %s",
+                 g->sector + 1, game_sector_name(g->sector));
+        draw_text_center(&c, 4, banner, theme_color(THEME_TITLE));
+    }
+
     if (g->state == GAME_PLAYING) {
         if (g->fuel / g->fuel_max < 0.25 && (g->frame / 15) % 2 == 0)
             draw_text_center(&c, 1, "LOW FUEL", theme_color(THEME_BAD));
