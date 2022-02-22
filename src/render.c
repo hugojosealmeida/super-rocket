@@ -457,9 +457,9 @@ static void draw_hud(const Game *g, Canvas *c)
             progress = 100;
 
         snprintf(line, sizeof(line),
-                 "DIST %4.0f / %.0f   %3d%%   TIME %s   %s   P pause   Q menu",
-                 g->player_x, GAME_WORLD_LENGTH, progress, time_text,
-                 game_difficulty_name(g->difficulty));
+                 "DIST %4.0f/%.0f %3d%%  S%d/3  TIME %s  %s  P pause  Q menu",
+                 g->player_x, GAME_WORLD_LENGTH, progress, g->sector + 1,
+                 time_text, game_difficulty_name(g->difficulty));
     }
     draw_text(c, 0, g->height - 1, line, theme_color(THEME_DIM));
     draw_text(c, 0, g->height - 1, "DIST", theme_color(THEME_LABEL));
