@@ -24,8 +24,18 @@ typedef enum {
     GAME_PLAYING,
     GAME_PAUSED,
     GAME_WON,
-    GAME_DEAD
+    GAME_DEAD,
+    GAME_UPGRADE
 } GameState;
+
+typedef enum {
+    UPGRADE_HULL,
+    UPGRADE_FUEL,
+    UPGRADE_SHIELD,
+    UPGRADE_WEAPON,
+    UPGRADE_RATE,
+    UPGRADE_COUNT
+} UpgradeType;
 
 typedef enum {
     DIFFICULTY_EASY,
@@ -152,10 +162,12 @@ typedef struct {
     double pickup_timer;
     double shield;
     double fire_cooldown;
+    double fire_delay;
     int weapon_level;
     double ufo_timer;
     int sector;
     double sector_banner;
+    UpgradeType upgrades[3];
     double gravity_scale;
     double spawn_interval;
 
@@ -185,6 +197,9 @@ void game_update(Game *g);
 
 void game_thrust(Game *g, int up, int down, int left, int right);
 void game_fire(Game *g);
+void game_roll_upgrades(Game *g);
+void game_choose_upgrade(Game *g, int index);
+const char *game_upgrade_name(UpgradeType type);
 void game_pause(Game *g);
 void game_resume(Game *g);
 void game_to_menu(Game *g);

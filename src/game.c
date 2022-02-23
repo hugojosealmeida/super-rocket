@@ -237,10 +237,14 @@ void game_reset(Game *g)
     g->pickup_timer = 5.0;
     g->shield = 0.0;
     g->fire_cooldown = 0.0;
+    g->fire_delay = 0.18;
     g->weapon_level = 1;
     g->ufo_timer = 9.0;
     g->sector = 0;
     g->sector_banner = 2.5;
+    g->upgrades[0] = UPGRADE_HULL;
+    g->upgrades[1] = UPGRADE_FUEL;
+    g->upgrades[2] = UPGRADE_SHIELD;
     g->gravity_scale = config->gravity;
     g->spawn_interval = config->spawn_interval;
     g->score = 0;
@@ -332,6 +336,78 @@ void game_thrust(Game *g, int up, int down, int left, int right)
         g->thrust[3] = THRUST_MEMORY;
 }
 
+static const char *UPGRADE_NAMES[UPGRADE_COUNT] = {
+    "HULL PLATING  +30 hull",
+    "EXPANDED TANK +25 fuel",
+    "SHIELD CELL   full shield",
+    "TWIN CANNONS  extra laser",
+    "COOLING COILS faster fire"
+};
+
+const char *game_upgrade_name(UpgradeType type)
+{
+    if (type < 0 || type >= UPGRADE_COUNT)
+        return UPGRADE_NAMES[0];
+    return UPGRADE_NAMES[type];
+}
+
+void game_roll_upgrades(Game *g)
+{
+    int pool[UPGRADE_COUNT];
+    int i;
+
+    for (i = 0; i < UPGRADE_COUNT; i++)
+        pool[i] = i;
+
+    for (i = UPGRADE_COUNT - 1; i > 0; i--) {
+        int j = rng_range(0, i + 1);
+        int tmp = pool[i];
+
+        pool[i] = pool[j];
+        pool[j] = tmp;
+    }
+
+    for (i = 0; i < 3; i++)
+        g->upgrades[i] = (UpgradeType)pool[i];
+}
+
+void game_choose_upgrade(Game *g, int index)
+{
+    UpgradeType type;
+
+    if (g->state != GAME_UPGRADE || index < 0 || index > 2)
+        return;
+
+    type = g->upgrades[index];
+
+    switch (type) {
+    case UPGRADE_HULL:
+        g->hull = util_clamp(g->hull + 30.0, 0.0, GAME_HULL_MAX);
+        break;
+    case UPGRADE_FUEL:
+        g->fuel_max += 25.0;
+        g->fuel = util_clamp(g->fuel + 25.0, 0.0, g->fuel_max);
+        break;
+    case UPGRADE_SHIELD:
+        g->shield = 100.0;
+        break;
+    case UPGRADE_WEAPON:
+        if (g->weapon_level < 3)
+            g->weapon_level++;
+        break;
+    case UPGRADE_RATE:
+        g->fire_delay *= 0.8;
+        if (g->fire_delay < 0.07)
+            g->fire_delay = 0.07;
+        break;
+    default:
+        break;
+    }
+
+    game_roll_upgrades(g);
+    g->state = GAME_PLAYING;
+}
+
 void game_fire(Game *g)
 {
     int i;
@@ -359,7 +435,7 @@ void game_fire(Game *g)
     g->lasers[slot].life = 1.4;
     g->lasers[slot].alive = 1;
 
-    g->fire_cooldown = 0.18;
+    g->fire_cooldown = g->fire_delay;
     g->stats.lasers_fired++;
 }
 
