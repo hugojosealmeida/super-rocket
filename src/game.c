@@ -986,6 +986,8 @@ static void update_player(Game *g)
             g->sector = sector;
             g->sector_banner = 2.5;
             g->score += 150 * sector;
+            game_roll_upgrades(g);
+            g->state = GAME_UPGRADE;
         }
     }
 
@@ -1173,12 +1175,13 @@ void game_update(Game *g)
     if (g->state == GAME_PLAYING) {
         g->mission_time += DT;
         update_player(g);
-        if (g->state == GAME_PLAYING)
+        if (g->state == GAME_PLAYING) {
             update_asteroids(g);
-        update_ufos(g);
-        update_shots(g);
-        update_lasers(g);
-        update_pickups(g);
+            update_ufos(g);
+            update_shots(g);
+            update_lasers(g);
+            update_pickups(g);
+        }
         update_particles(g);
     } else if (g->state == GAME_WON || g->state == GAME_DEAD) {
         update_particles(g);
