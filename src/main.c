@@ -67,6 +67,13 @@ static void handle_input(Game *g, const TermInput *in, int *running)
         }
         break;
 
+    case GAME_UPGRADE:
+        if (in->digit >= 1 && in->digit <= 3)
+            game_choose_upgrade(g, in->digit - 1);
+        else if (in->enter)
+            game_choose_upgrade(g, 0);
+        break;
+
     case GAME_WON:
     case GAME_DEAD:
         if (in->restart) {
