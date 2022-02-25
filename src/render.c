@@ -361,6 +361,34 @@ static void draw_overlay(const Game *g, Canvas *c)
         if (g->new_best)
             draw_text_center(c, y + 5, "NEW BEST!", theme_color(THEME_WARN));
         draw_text_center(c, y + 8, "R fly again    Q menu", theme_color(THEME_LABEL));
+    } else if (g->state == GAME_UPGRADE) {
+        int w = 48;
+        int h = 12;
+        int x = (c->width - w) / 2;
+        int y = g->play_height / 2 - h / 2;
+        int i;
+
+        if (x < 0)
+            x = 0;
+        if (y < 0)
+            y = 0;
+
+        draw_box(c, x, y, w, h, theme_color(THEME_BOX));
+        draw_text_center(c, y + 1, "SECTOR CLEARED", theme_color(THEME_GOOD));
+        draw_text_center(c, y + 2, "Choose one upgrade", theme_color(THEME_TEXT));
+
+        for (i = 0; i < 3; i++) {
+            char line[72];
+
+            snprintf(line, sizeof(line), "[%d]  %s", i + 1,
+                     game_upgrade_name(g->upgrades[i]));
+            draw_text_center(c, y + 4 + i * 2, line,
+                             i == 0 ? theme_color(THEME_WARN)
+                                    : theme_color(THEME_TEXT));
+        }
+
+        draw_text_center(c, y + 10, "1-3 select    ENTER takes the first",
+                         theme_color(THEME_DIM));
     } else if (g->state == GAME_DEAD) {
         int w = 34;
         int h = 7;
