@@ -410,33 +410,48 @@ void game_choose_upgrade(Game *g, int index)
 
 void game_fire(Game *g)
 {
-    int i;
-    int slot = -1;
+    int shot;
+    int fired = 0;
 
     if (g->state != GAME_PLAYING || g->show_help)
         return;
     if (g->fire_cooldown > 0.0)
         return;
 
-    for (i = 0; i < GAME_MAX_LASERS; i++) {
-        if (!g->lasers[i].alive) {
-            slot = i;
-            break;
+    for (shot = 0; shot < g->weapon_level && shot < 3; shot++) {
+        double angle = 0.0;
+        int i;
+        int slot = -1;
+
+        if (g->weapon_level == 2)
+            angle = (shot == 0) ? -0.10 : 0.10;
+        else if (g->weapon_level >= 3)
+            angle = (double)(shot - 1) * 0.16;
+
+        for (i = 0; i < GAME_MAX_LASERS; i++) {
+            if (!g->lasers[i].alive) {
+                slot = i;
+                break;
+            }
         }
+
+        if (slot < 0)
+            break;
+
+        g->lasers[slot].x = g->player_x + 5.0;
+        g->lasers[slot].y = g->player_y;
+        g->lasers[slot].vx = 70.0 * cos(angle);
+        g->lasers[slot].vy = 70.0 * sin(angle);
+        g->lasers[slot].life = 1.4;
+        g->lasers[slot].alive = 1;
+        fired++;
     }
 
-    if (slot < 0)
+    if (fired == 0)
         return;
 
-    g->lasers[slot].x = g->player_x + 5.0;
-    g->lasers[slot].y = g->player_y;
-    g->lasers[slot].vx = 70.0;
-    g->lasers[slot].vy = 0.0;
-    g->lasers[slot].life = 1.4;
-    g->lasers[slot].alive = 1;
-
     g->fire_cooldown = g->fire_delay;
-    g->stats.lasers_fired++;
+    g->stats.lasers_fired += fired;
 }
 
 static void spawn_particle(Game *g, double x, double y, double vx, double vy,
