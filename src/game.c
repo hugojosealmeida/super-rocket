@@ -71,6 +71,53 @@ void game_save_scores(const Game *g)
     storage_write_ints(".super_rocket_scores", g->best, DIFFICULTY_COUNT);
 }
 
+void game_load_leaderboard(Game *g)
+{
+    FILE *file;
+    int i;
+
+    for (i = 0; i < GAME_LEADERBOARD_SIZE; i++) {
+        snprintf(g->leaderboard[i].name, sizeof(g->leaderboard[i].name), "---");
+        g->leaderboard[i].score = 0;
+        g->leaderboard[i].difficulty = DIFFICULTY_NORMAL;
+    }
+
+    file = fopen(storage_path(".super_rocket_leaderboard"), "r");
+    if (file == NULL)
+        return;
+
+    for (i = 0; i < GAME_LEADERBOARD_SIZE; i++) {
+        char name[8];
+        int score;
+        int difficulty;
+
+        if (fscanf(file, "%7s %d %d", name, &score, &difficulty) != 3)
+            break;
+
+        snprintf(g->leaderboard[i].name, sizeof(g->leaderboard[i].name), "%s", name);
+        g->leaderboard[i].score = score;
+        g->leaderboard[i].difficulty = difficulty;
+    }
+
+    fclose(file);
+}
+
+void game_save_leaderboard(const Game *g)
+{
+    FILE *file;
+    int i;
+
+    file = fopen(storage_path(".super_rocket_leaderboard"), "w");
+    if (file == NULL)
+        return;
+
+    for (i = 0; i < GAME_LEADERBOARD_SIZE; i++)
+        fprintf(file, "%s %d %d\n", g->leaderboard[i].name,
+                g->leaderboard[i].score, g->leaderboard[i].difficulty);
+
+    fclose(file);
+}
+
 void game_load_stats(Game *g)
 {
     int values[GAME_STAT_COUNT];
@@ -128,6 +175,7 @@ void game_reset_stats(Game *g)
 
     storage_write_ints(".super_rocket_stats", values, GAME_STAT_COUNT);
     game_load_stats(g);
+    game_load_leaderboard(g);
 }
 
 void game_load_settings(Game *g)
@@ -212,6 +260,7 @@ void game_init(Game *g, int width, int height)
     game_load_settings(g);
     game_load_scores(g);
     game_load_stats(g);
+    game_load_leaderboard(g);
 
     game_reset(g);
     g->state = GAME_MENU;
@@ -245,6 +294,11 @@ void game_reset(Game *g)
     g->upgrades[0] = UPGRADE_HULL;
     g->upgrades[1] = UPGRADE_FUEL;
     g->upgrades[2] = UPGRADE_SHIELD;
+    g->leaderboard_rank = -1;
+    g->initials[0] = '\0';
+    g->initials[1] = '\0';
+    g->initials[2] = '\0';
+    g->initials[3] = '\0';
     g->gravity_scale = config->gravity;
     g->spawn_interval = config->spawn_interval;
     g->score = 0;

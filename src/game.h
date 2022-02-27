@@ -25,7 +25,8 @@ typedef enum {
     GAME_PAUSED,
     GAME_WON,
     GAME_DEAD,
-    GAME_UPGRADE
+    GAME_UPGRADE,
+    GAME_INITIALS
 } GameState;
 
 typedef enum {
@@ -53,6 +54,13 @@ typedef struct {
 } Settings;
 
 #define GAME_STAT_COUNT 10
+#define GAME_LEADERBOARD_SIZE 5
+
+typedef struct {
+    char name[4];
+    int score;
+    int difficulty;
+} ScoreEntry;
 
 typedef struct {
     int runs;
@@ -168,6 +176,9 @@ typedef struct {
     int sector;
     double sector_banner;
     UpgradeType upgrades[3];
+    int leaderboard_rank;
+    char initials[4];
+    ScoreEntry leaderboard[GAME_LEADERBOARD_SIZE];
     double gravity_scale;
     double spawn_interval;
 
@@ -211,6 +222,8 @@ void game_save_settings(const Game *g);
 void game_load_stats(Game *g);
 void game_save_stats(const Game *g);
 void game_reset_stats(Game *g);
+void game_load_leaderboard(Game *g);
+void game_save_leaderboard(const Game *g);
 void game_toggle_help(Game *g);
 void game_cycle_theme(Game *g);
 void game_toggle_sound(Game *g);
