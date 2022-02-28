@@ -71,6 +71,38 @@ void game_save_scores(const Game *g)
     storage_write_ints(".super_rocket_scores", g->best, DIFFICULTY_COUNT);
 }
 
+int game_leaderboard_position(const Game *g, int score)
+{
+    int i;
+
+    for (i = 0; i < GAME_LEADERBOARD_SIZE; i++) {
+        if (score > g->leaderboard[i].score)
+            return i;
+    }
+
+    return -1;
+}
+
+void game_commit_initials(Game *g)
+{
+    int i;
+    int rank = g->leaderboard_rank;
+
+    if (rank < 0 || rank >= GAME_LEADERBOARD_SIZE)
+        return;
+
+    for (i = GAME_LEADERBOARD_SIZE - 1; i > rank; i--)
+        g->leaderboard[i] = g->leaderboard[i - 1];
+
+    snprintf(g->leaderboard[rank].name, sizeof(g->leaderboard[rank].name),
+             "%s", g->initials[0] != '\0' ? g->initials : "AAA");
+    g->leaderboard[rank].score = g->score;
+    g->leaderboard[rank].difficulty = g->difficulty;
+
+    game_save_leaderboard(g);
+    g->state = GAME_WON;
+}
+
 void game_load_leaderboard(Game *g)
 {
     FILE *file;
@@ -1078,7 +1110,12 @@ static void update_player(Game *g)
                 game_save_scores(g);
             }
             record_run(g, 1);
-            g->state = GAME_WON;
+            g->leaderboard_rank = game_leaderboard_position(g, g->score);
+            g->initials[0] = '\0';
+            g->initials[1] = '\0';
+            g->initials[2] = '\0';
+            g->initials[3] = '\0';
+            g->state = g->leaderboard_rank >= 0 ? GAME_INITIALS : GAME_WON;
         }
     }
 }

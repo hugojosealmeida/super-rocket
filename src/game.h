@@ -224,6 +224,8 @@ void game_save_stats(const Game *g);
 void game_reset_stats(Game *g);
 void game_load_leaderboard(Game *g);
 void game_save_leaderboard(const Game *g);
+int game_leaderboard_position(const Game *g, int score);
+void game_commit_initials(Game *g);
 void game_toggle_help(Game *g);
 void game_cycle_theme(Game *g);
 void game_toggle_sound(Game *g);
