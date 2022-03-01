@@ -343,6 +343,29 @@ static void draw_overlay(const Game *g, Canvas *c)
         draw_box(c, x, y, w, h, theme_color(THEME_BOX));
         draw_text_center(c, y + 1, "PAUSED", theme_color(THEME_WARN));
         draw_text_center(c, y + 3, "P resume   R restart   Q menu", theme_color(THEME_TEXT));
+    } else if (g->state == GAME_INITIALS) {
+        char line[64];
+        char prompt[16];
+        int w = 40;
+        int h = 9;
+        int x = (c->width - w) / 2;
+        int y = g->play_height / 2 - h / 2;
+        size_t i;
+
+        draw_box(c, x, y, w, h, theme_color(THEME_GOOD));
+        draw_text_center(c, y + 1, "NEW HIGH SCORE", theme_color(THEME_WARN));
+
+        snprintf(line, sizeof(line), "SCORE %d", g->score);
+        draw_text_center(c, y + 3, line, theme_color(THEME_TEXT));
+
+        for (i = 0; i < 3; i++)
+            prompt[i] = g->initials[i] != '\0' ? g->initials[i] : '_';
+        prompt[3] = '\0';
+        snprintf(line, sizeof(line), "INITIALS   %c %c %c",
+                 prompt[0], prompt[1], prompt[2]);
+        draw_text_center(c, y + 5, line, theme_color(THEME_TITLE));
+        draw_text_center(c, y + 7, "ENTER confirm   BACKSPACE erase",
+                         theme_color(THEME_DIM));
     } else if (g->state == GAME_WON) {
         char time_text[16];
         char score_text[32];
