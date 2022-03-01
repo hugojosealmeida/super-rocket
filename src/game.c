@@ -3,6 +3,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "rng.h"
 #include "storage.h"
@@ -81,6 +82,31 @@ int game_leaderboard_position(const Game *g, int score)
     }
 
     return -1;
+}
+
+void game_initial_push(Game *g, char letter)
+{
+    size_t len;
+
+    if (letter < 'A' || letter > 'Z')
+        return;
+
+    len = strlen(g->initials);
+    if (len >= 3)
+        return;
+
+    g->initials[len] = letter;
+    g->initials[len + 1] = '\0';
+}
+
+void game_initial_pop(Game *g)
+{
+    size_t len = strlen(g->initials);
+
+    if (len == 0)
+        return;
+
+    g->initials[len - 1] = '\0';
 }
 
 void game_commit_initials(Game *g)

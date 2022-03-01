@@ -67,6 +67,15 @@ static void handle_input(Game *g, const TermInput *in, int *running)
         }
         break;
 
+    case GAME_INITIALS:
+        if (in->letter >= 'A' && in->letter <= 'Z')
+            game_initial_push(g, (char)in->letter);
+        else if (in->backspace)
+            game_initial_pop(g);
+        else if (in->enter)
+            game_commit_initials(g);
+        break;
+
     case GAME_UPGRADE:
         if (in->digit >= 1 && in->digit <= 3)
             game_choose_upgrade(g, in->digit - 1);
