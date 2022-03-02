@@ -190,6 +190,7 @@ typedef struct {
     Stats stats;
     double fps;
     int show_help;
+    int show_scores;
 
     Asteroid asteroids[GAME_MAX_ASTEROIDS];
     Particle particles[GAME_MAX_PARTICLES];
@@ -229,6 +230,7 @@ void game_commit_initials(Game *g);
 void game_initial_push(Game *g, char letter);
 void game_initial_pop(Game *g);
 void game_toggle_help(Game *g);
+void game_toggle_scores(Game *g);
 void game_cycle_theme(Game *g);
 void game_toggle_sound(Game *g);
 void game_toggle_fps(Game *g);

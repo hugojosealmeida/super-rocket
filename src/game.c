@@ -267,6 +267,11 @@ void game_toggle_help(Game *g)
     g->show_help = !g->show_help;
 }
 
+void game_toggle_scores(Game *g)
+{
+    g->show_scores = !g->show_scores;
+}
+
 void game_cycle_theme(Game *g)
 {
     g->settings.theme = (g->settings.theme + 1) % GAME_THEME_COUNT;
@@ -362,6 +367,7 @@ void game_reset(Game *g)
     g->score = 0;
     g->new_best = 0;
     g->show_help = 0;
+    g->show_scores = 0;
 
     for (i = 0; i < 4; i++)
         g->thrust[i] = 0.0;
@@ -1301,7 +1307,7 @@ void game_update(Game *g)
 {
     g->frame++;
 
-    if (g->show_help)
+    if (g->show_help || g->show_scores)
         return;
 
     if (g->state == GAME_PLAYING) {
