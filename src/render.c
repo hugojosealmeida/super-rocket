@@ -271,7 +271,8 @@ static void draw_menu(const Game *g, Canvas *c)
                          selected ? theme_color(THEME_WARN) : theme_color(THEME_DIM));
     }
 
-    draw_text_center(c, mid, "[ ENTER ]  lift off        [ Q ]  quit", theme_color(THEME_TEXT));
+    draw_text_center(c, mid, "[ ENTER ] lift off   [ H ] help   [ I ] scores   [ Q ] quit",
+                     theme_color(THEME_TEXT));
     draw_text_center(c, mid + 3, "Fly with ARROWS or WASD.", theme_color(THEME_DIM));
     draw_text_center(c, mid + 4, "Thrust burns fuel. Dodge the asteroids.", theme_color(THEME_DIM));
     draw_text_center(c, mid + 5, "Reach Mars orbit to complete the mission.", theme_color(THEME_DIM));
@@ -330,6 +331,36 @@ static void draw_help(const Game *g, Canvas *c)
     draw_text_center(c, y + 11, "Shoot asteroids and avoid the UFOs.", theme_color(THEME_DIM));
     draw_text_center(c, y + 12, "Reach the Mars orbit to win.", theme_color(THEME_DIM));
     draw_text_center(c, y + 15, "H close help", theme_color(THEME_WARN));
+}
+
+static void draw_leaderboard(const Game *g, Canvas *c)
+{
+    int w = 44;
+    int h = 11;
+    int x = (c->width - w) / 2;
+    int y = g->play_height / 2 - h / 2;
+    int i;
+
+    if (x < 0)
+        x = 0;
+    if (y < 0)
+        y = 0;
+
+    draw_box(c, x, y, w, h, theme_color(THEME_BOX));
+    draw_text_center(c, y + 1, "T O P   P I L O T S", theme_color(THEME_TITLE));
+
+    for (i = 0; i < GAME_LEADERBOARD_SIZE; i++) {
+        char line[64];
+
+        snprintf(line, sizeof(line), "%d. %-3s  %6d  %s", i + 1,
+                 g->leaderboard[i].name, g->leaderboard[i].score,
+                 game_difficulty_name((Difficulty)g->leaderboard[i].difficulty));
+        draw_text_center(c, y + 3 + i, line,
+                         i == g->leaderboard_rank ? theme_color(THEME_WARN)
+                                                  : theme_color(THEME_TEXT));
+    }
+
+    draw_text_center(c, y + 9, "I close", theme_color(THEME_DIM));
 }
 
 static void draw_overlay(const Game *g, Canvas *c)
@@ -684,6 +715,8 @@ void render_frame(const Game *g)
     draw_overlay(g, &c);
     if (g->show_help)
         draw_help(g, &c);
+    if (g->show_scores)
+        draw_leaderboard(g, &c);
     draw_hud(g, &c);
 
     term_draw(c.cells, c.colors, c.width, c.height);
