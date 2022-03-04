@@ -22,7 +22,12 @@ static void handle_input(Game *g, const TermInput *in, int *running)
         return;
     }
 
-    if (g->show_help)
+    if (in->info) {
+        game_toggle_scores(g);
+        return;
+    }
+
+    if (g->show_help || g->show_scores)
         return;
 
     if (in->theme)

@@ -327,9 +327,10 @@ static void draw_help(const Game *g, Canvas *c)
     draw_text_center(c, y + 6, "R               restart mission", theme_color(THEME_TEXT));
     draw_text_center(c, y + 7, "T / M / F       theme / sound / fps", theme_color(THEME_TEXT));
     draw_text_center(c, y + 8, "Q               menu or quit", theme_color(THEME_TEXT));
-    draw_text_center(c, y + 10, "Collect fuel, shields and repairs.", theme_color(THEME_DIM));
-    draw_text_center(c, y + 11, "Shoot asteroids and avoid the UFOs.", theme_color(THEME_DIM));
-    draw_text_center(c, y + 12, "Reach the Mars orbit to win.", theme_color(THEME_DIM));
+    draw_text_center(c, y + 9, "I               leaderboard", theme_color(THEME_TEXT));
+    draw_text_center(c, y + 11, "Collect fuel, shields and repairs.", theme_color(THEME_DIM));
+    draw_text_center(c, y + 12, "Shoot asteroids and avoid the UFOs.", theme_color(THEME_DIM));
+    draw_text_center(c, y + 13, "Reach the Mars orbit to win.", theme_color(THEME_DIM));
     draw_text_center(c, y + 15, "H close help", theme_color(THEME_WARN));
 }
 
