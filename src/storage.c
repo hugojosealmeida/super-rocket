@@ -27,14 +27,12 @@ int storage_read_ints(const char *filename, int *values, int count)
         return -1;
 
     for (i = 0; i < count; i++) {
-        if (fscanf(file, "%d", &values[i]) != 1) {
-            fclose(file);
-            return -1;
-        }
+        if (fscanf(file, "%d", &values[i]) != 1)
+            break;
     }
 
     fclose(file);
-    return 0;
+    return i;
 }
 
 int storage_write_ints(const char *filename, const int *values, int count)

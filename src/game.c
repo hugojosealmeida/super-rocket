@@ -180,6 +180,7 @@ void game_load_stats(Game *g)
 {
     int values[GAME_STAT_COUNT];
     int i;
+    int read;
 
     g->stats.runs = 0;
     g->stats.wins = 0;
@@ -192,19 +193,20 @@ void game_load_stats(Game *g)
     g->stats.total_fuel_used = 0;
     g->stats.ufos_destroyed = 0;
 
-    if (storage_read_ints(".super_rocket_stats", values, GAME_STAT_COUNT) != 0)
+    read = storage_read_ints(".super_rocket_stats", values, GAME_STAT_COUNT);
+    if (read <= 0)
         return;
 
-    g->stats.runs = values[0] < 0 ? 0 : values[0];
-    g->stats.wins = values[1] < 0 ? 0 : values[1];
-    g->stats.deaths = values[2] < 0 ? 0 : values[2];
-    g->stats.asteroids_destroyed = values[3] < 0 ? 0 : values[3];
-    g->stats.pickups_collected = values[4] < 0 ? 0 : values[4];
-    g->stats.lasers_fired = values[5] < 0 ? 0 : values[5];
-    g->stats.best_time = values[6] < 0 ? 0 : values[6];
-    g->stats.total_distance = values[7] < 0 ? 0 : values[7];
-    g->stats.total_fuel_used = values[8] < 0 ? 0 : values[8];
-    g->stats.ufos_destroyed = values[9] < 0 ? 0 : values[9];
+    if (read > 0) g->stats.runs = values[0] < 0 ? 0 : values[0];
+    if (read > 1) g->stats.wins = values[1] < 0 ? 0 : values[1];
+    if (read > 2) g->stats.deaths = values[2] < 0 ? 0 : values[2];
+    if (read > 3) g->stats.asteroids_destroyed = values[3] < 0 ? 0 : values[3];
+    if (read > 4) g->stats.pickups_collected = values[4] < 0 ? 0 : values[4];
+    if (read > 5) g->stats.lasers_fired = values[5] < 0 ? 0 : values[5];
+    if (read > 6) g->stats.best_time = values[6] < 0 ? 0 : values[6];
+    if (read > 7) g->stats.total_distance = values[7] < 0 ? 0 : values[7];
+    if (read > 8) g->stats.total_fuel_used = values[8] < 0 ? 0 : values[8];
+    if (read > 9) g->stats.ufos_destroyed = values[9] < 0 ? 0 : values[9];
 
     (void)i;
 }
