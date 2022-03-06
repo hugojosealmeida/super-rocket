@@ -192,6 +192,7 @@ void game_load_stats(Game *g)
     g->stats.total_distance = 0;
     g->stats.total_fuel_used = 0;
     g->stats.ufos_destroyed = 0;
+    g->stats.achievements = 0;
 
     read = storage_read_ints(".super_rocket_stats", values, GAME_STAT_COUNT);
     if (read <= 0)
@@ -207,6 +208,7 @@ void game_load_stats(Game *g)
     if (read > 7) g->stats.total_distance = values[7] < 0 ? 0 : values[7];
     if (read > 8) g->stats.total_fuel_used = values[8] < 0 ? 0 : values[8];
     if (read > 9) g->stats.ufos_destroyed = values[9] < 0 ? 0 : values[9];
+    if (read > 10) g->stats.achievements = values[10] < 0 ? 0 : values[10];
 
     (void)i;
 }
@@ -225,13 +227,14 @@ void game_save_stats(const Game *g)
     values[7] = g->stats.total_distance;
     values[8] = g->stats.total_fuel_used;
     values[9] = g->stats.ufos_destroyed;
+    values[10] = g->stats.achievements;
 
     storage_write_ints(".super_rocket_stats", values, GAME_STAT_COUNT);
 }
 
 void game_reset_stats(Game *g)
 {
-    int values[GAME_STAT_COUNT] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+    int values[GAME_STAT_COUNT] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
     storage_write_ints(".super_rocket_stats", values, GAME_STAT_COUNT);
     game_load_stats(g);
@@ -454,6 +457,44 @@ void game_thrust(Game *g, int up, int down, int left, int right)
         g->thrust[2] = THRUST_MEMORY;
     if (right)
         g->thrust[3] = THRUST_MEMORY;
+}
+
+static const char *ACHIEVEMENT_NAMES[GAME_ACHIEVEMENT_COUNT] = {
+    "FIRST CONTACT",
+    "UNTOUCHED",
+    "FAST PASSAGE",
+    "ROCK BREAKER",
+    "UFO HUNTER",
+    "COLLECTOR"
+};
+
+const char *game_achievement_name(int index)
+{
+    if (index < 0 || index >= GAME_ACHIEVEMENT_COUNT)
+        return ACHIEVEMENT_NAMES[0];
+    return ACHIEVEMENT_NAMES[index];
+}
+
+int game_unlock_achievement(Game *g, int flag)
+{
+    int i;
+
+    if (g->stats.achievements & flag)
+        return 0;
+
+    g->stats.achievements |= flag;
+    game_save_stats(g);
+
+    for (i = 0; i < GAME_ACHIEVEMENT_COUNT; i++) {
+        if (flag == (1 << i)) {
+            snprintf(g->toast, sizeof(g->toast), "ACHIEVEMENT: %s",
+                     ACHIEVEMENT_NAMES[i]);
+            g->toast_timer = 3.5;
+            break;
+        }
+    }
+
+    return 1;
 }
 
 static const char *UPGRADE_NAMES[UPGRADE_COUNT] = {
