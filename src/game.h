@@ -53,8 +53,16 @@ typedef struct {
     int show_fps;
 } Settings;
 
-#define GAME_STAT_COUNT 10
+#define GAME_STAT_COUNT 11
 #define GAME_LEADERBOARD_SIZE 5
+
+#define ACH_FIRST_WIN    0x01
+#define ACH_NO_DAMAGE    0x02
+#define ACH_SPEEDRUN     0x04
+#define ACH_ROCK_BREAKER 0x08
+#define ACH_UFO_HUNTER   0x10
+#define ACH_COLLECTOR    0x20
+#define GAME_ACHIEVEMENT_COUNT 6
 
 typedef struct {
     char name[4];
@@ -73,6 +81,7 @@ typedef struct {
     int total_distance;
     int total_fuel_used;
     int ufos_destroyed;
+    int achievements;
 } Stats;
 
 typedef struct {
@@ -191,6 +200,8 @@ typedef struct {
     double fps;
     int show_help;
     int show_scores;
+    double toast_timer;
+    char toast[48];
 
     Asteroid asteroids[GAME_MAX_ASTEROIDS];
     Particle particles[GAME_MAX_PARTICLES];
@@ -212,6 +223,8 @@ void game_fire(Game *g);
 void game_roll_upgrades(Game *g);
 void game_choose_upgrade(Game *g, int index);
 const char *game_upgrade_name(UpgradeType type);
+const char *game_achievement_name(int index);
+int game_unlock_achievement(Game *g, int flag);
 void game_pause(Game *g);
 void game_resume(Game *g);
 void game_to_menu(Game *g);
