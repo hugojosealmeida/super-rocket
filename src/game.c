@@ -373,6 +373,9 @@ void game_reset(Game *g)
     g->new_best = 0;
     g->show_help = 0;
     g->show_scores = 0;
+    g->toast_timer = 0.0;
+    g->toast[0] = '\0';
+    g->took_damage = 0;
 
     for (i = 0; i < 4; i++)
         g->thrust[i] = 0.0;
@@ -857,6 +860,7 @@ static void update_shots(Game *g)
             }
 
             g->hull -= damage;
+            g->took_damage = 1;
 
             for (j = 0; j < 8; j++) {
                 double angle = rng_double() * 6.283185307179586;
@@ -1324,6 +1328,7 @@ static void update_asteroids(Game *g)
             }
 
             g->hull -= damage;
+            g->took_damage = 1;
 
             for (j = 0; j < 10; j++) {
                 double angle = rng_double() * 6.283185307179586;
