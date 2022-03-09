@@ -1189,6 +1189,11 @@ static void update_player(Game *g)
                 game_save_scores(g);
             }
             record_run(g, 1);
+            game_unlock_achievement(g, ACH_FIRST_WIN);
+            if (!g->took_damage)
+                game_unlock_achievement(g, ACH_NO_DAMAGE);
+            if (g->mission_time < 75.0)
+                game_unlock_achievement(g, ACH_SPEEDRUN);
             g->leaderboard_rank = game_leaderboard_position(g, g->score);
             g->initials[0] = '\0';
             g->initials[1] = '\0';
