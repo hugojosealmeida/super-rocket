@@ -926,6 +926,8 @@ static void update_lasers(Game *g)
 
                     rock->alive = 0;
                     g->stats.asteroids_destroyed++;
+                    if (g->stats.asteroids_destroyed == 10)
+                        game_unlock_achievement(g, ACH_ROCK_BREAKER);
                     g->score += rock->radius == 2 ? 100 : 50;
                     g->shake = 0.35;
 
@@ -965,6 +967,8 @@ static void update_lasers(Game *g)
 
                         ship->alive = 0;
                         g->stats.ufos_destroyed++;
+                        if (g->stats.ufos_destroyed == 5)
+                            game_unlock_achievement(g, ACH_UFO_HUNTER);
                         g->score += 200;
                         g->shake = 0.5;
 
@@ -1047,6 +1051,8 @@ static void update_pickups(Game *g)
 
             g->pickups[i].alive = 0;
             g->stats.pickups_collected++;
+            if (g->stats.pickups_collected == 10)
+                game_unlock_achievement(g, ACH_COLLECTOR);
         }
     }
 }
