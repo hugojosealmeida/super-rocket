@@ -705,6 +705,15 @@ void render_frame(const Game *g)
             draw_text_center(&c, 2, "HULL CRITICAL", theme_color(THEME_BAD));
     }
 
+    if (g->toast_timer > 0.0 && g->toast[0] != '\0') {
+        int w = (int)strlen(g->toast) + 4;
+        int x = (c.width - w) / 2;
+
+        if (x < 0)
+            x = 0;
+        draw_text(&c, x, 2, g->toast, theme_color(THEME_WARN));
+    }
+
     if (g->settings.show_fps && g->state != GAME_MENU) {
         char fps_text[24];
 

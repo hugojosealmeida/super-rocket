@@ -1366,6 +1366,9 @@ void game_update(Game *g)
 {
     g->frame++;
 
+    if (g->toast_timer > 0.0)
+        g->toast_timer -= DT;
+
     if (g->show_help || g->show_scores)
         return;
 
