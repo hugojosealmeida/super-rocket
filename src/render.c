@@ -297,10 +297,19 @@ static void draw_menu(const Game *g, Canvas *c)
         else
             snprintf(best_text, sizeof(best_text), "--:--");
 
+        int badges = 0;
+        int b;
+
+        for (b = 0; b < GAME_ACHIEVEMENT_COUNT; b++) {
+            if (g->stats.achievements & (1 << b))
+                badges++;
+        }
+
         snprintf(stats_line, sizeof(stats_line),
-                 "RUNS %d   WINS %d   BEST %s   DOWNED %d",
+                 "RUNS %d  WINS %d  BEST %s  KILLS %d  BADGES %d/%d",
                  g->stats.runs, g->stats.wins, best_text,
-                 g->stats.asteroids_destroyed);
+                 g->stats.asteroids_destroyed + g->stats.ufos_destroyed,
+                 badges, GAME_ACHIEVEMENT_COUNT);
         draw_text_center(c, mid + 8, stats_line, theme_color(THEME_DIM));
     }
 
@@ -413,6 +422,13 @@ static void draw_overlay(const Game *g, Canvas *c)
         draw_text_center(c, y + 1, "MARS ORBIT ACHIEVED", theme_color(THEME_GOOD));
         draw_text_center(c, y + 3, time_text, theme_color(THEME_TEXT));
         draw_text_center(c, y + 4, score_text, theme_color(THEME_TEXT));
+        if (g->leaderboard_rank >= 0) {
+            char rank_text[32];
+
+            snprintf(rank_text, sizeof(rank_text), "LEADERBOARD  #%d",
+                     g->leaderboard_rank + 1);
+            draw_text_center(c, y + 6, rank_text, theme_color(THEME_WARN));
+        }
         if (g->new_best)
             draw_text_center(c, y + 5, "NEW BEST!", theme_color(THEME_WARN));
         draw_text_center(c, y + 8, "R fly again    Q menu", theme_color(THEME_LABEL));
