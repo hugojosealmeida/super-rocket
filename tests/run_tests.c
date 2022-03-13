@@ -61,6 +61,10 @@ int main(void)
     test_leaderboard();
     test_report("leaderboard", failures);
 
+    failures = test_failures;
+    test_theme();
+    test_report("theme", failures);
+
     printf("\n%d checks, %d failures\n", test_checks, test_failures);
 
     /* best effort cleanup of the throwaway home */
