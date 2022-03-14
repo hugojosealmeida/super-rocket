@@ -65,6 +65,10 @@ int main(void)
     test_theme();
     test_report("theme", failures);
 
+    failures = test_failures;
+    test_campaign();
+    test_report("campaign", failures);
+
     printf("\n%d checks, %d failures\n", test_checks, test_failures);
 
     /* best effort cleanup of the throwaway home */
