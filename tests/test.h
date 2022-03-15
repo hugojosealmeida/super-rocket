@@ -24,5 +24,6 @@ void test_game(void);
 void test_leaderboard(void);
 void test_theme(void);
 void test_campaign(void);
+void test_combat(void);
 
 #endif
