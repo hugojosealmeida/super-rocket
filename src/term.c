@@ -90,6 +90,12 @@ int term_should_stop(void)
     return stop_requested != 0;
 }
 
+void term_beep(void)
+{
+    putchar('\a');
+    fflush(stdout);
+}
+
 void term_draw(const char *chars, const unsigned char *colors, int width, int height)
 {
     int x, y;

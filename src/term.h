@@ -26,6 +26,7 @@ void term_init(void);
 void term_shutdown(void);
 void term_size(int *width, int *height);
 void term_read_input(TermInput *in);
+void term_beep(void);
 void term_draw(const char *chars, const unsigned char *colors, int width, int height);
 double term_time(void);
 void term_sleep(double seconds);

@@ -7,6 +7,7 @@
 
 #include "rng.h"
 #include "storage.h"
+#include "term.h"
 #include "util.h"
 
 #define DT 0.033
@@ -614,6 +615,9 @@ void game_fire(Game *g)
     if (fired == 0)
         return;
 
+    if (g->settings.sound)
+        term_beep();
+
     g->fire_cooldown = g->fire_delay;
     g->stats.lasers_fired += fired;
 }
@@ -861,6 +865,8 @@ static void update_shots(Game *g)
 
             g->hull -= damage;
             g->took_damage = 1;
+            if (g->settings.sound)
+                term_beep();
 
             for (j = 0; j < 8; j++) {
                 double angle = rng_double() * 6.283185307179586;
