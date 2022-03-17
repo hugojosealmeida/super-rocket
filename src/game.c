@@ -883,6 +883,8 @@ static void update_shots(Game *g)
                 g->score = 0;
                 explode_rocket(g);
                 record_run(g, 0);
+                if (g->settings.sound)
+                    term_beep();
                 g->state = GAME_DEAD;
             }
         }
@@ -1057,6 +1059,8 @@ static void update_pickups(Game *g)
 
             g->pickups[i].alive = 0;
             g->stats.pickups_collected++;
+            if (g->settings.sound)
+                term_beep();
             if (g->stats.pickups_collected == 10)
                 game_unlock_achievement(g, ACH_COLLECTOR);
         }
@@ -1212,6 +1216,8 @@ static void update_player(Game *g)
             g->initials[2] = '\0';
             g->initials[3] = '\0';
             g->state = g->leaderboard_rank >= 0 ? GAME_INITIALS : GAME_WON;
+            if (g->settings.sound)
+                term_beep();
         }
     }
 }
@@ -1362,6 +1368,8 @@ static void update_asteroids(Game *g)
                 g->score = 0;
                 explode_rocket(g);
                 record_run(g, 0);
+                if (g->settings.sound)
+                    term_beep();
                 g->state = GAME_DEAD;
             }
         }
