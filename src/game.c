@@ -1258,10 +1258,11 @@ static void spawn_asteroid(Game *g)
 
     g->asteroids[slot].x = x;
     g->asteroids[slot].y = y;
-    g->asteroids[slot].vx = -(3.0 + rng_double() * 8.0);
+    g->asteroids[slot].vx = -(3.0 + rng_double() * 8.0) *
+                            (1.0 + (double)g->sector * 0.2);
     g->asteroids[slot].vy = (rng_double() - 0.5) * 4.0;
     g->asteroids[slot].radius = radius;
-    g->asteroids[slot].hp = (radius == 2) ? 3 : 1;
+    g->asteroids[slot].hp = (radius == 2 ? 3 : 1) + g->sector / 2;
     g->asteroids[slot].alive = 1;
 }
 
@@ -1308,7 +1309,15 @@ static void update_asteroids(Game *g)
     g->spawn_timer -= DT;
     if (g->spawn_timer <= 0.0) {
         spawn_asteroid(g);
-        g->spawn_timer = g->spawn_interval * (0.7 + rng_double() * 0.6);
+        {
+            double sector_factor = 1.0 - (double)g->sector * 0.18;
+
+            if (sector_factor < 0.5)
+                sector_factor = 0.5;
+
+            g->spawn_timer = g->spawn_interval * sector_factor *
+                             (0.7 + rng_double() * 0.6);
+        }
     }
 
     for (i = 0; i < GAME_MAX_ASTEROIDS; i++) {
