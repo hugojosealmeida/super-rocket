@@ -24,12 +24,13 @@ typedef struct {
     double fuel;
     double gravity;
     double spawn_interval;
+    double ufo_interval;
 } DifficultyConfig;
 
 static const DifficultyConfig DIFFICULTIES[DIFFICULTY_COUNT] = {
-    { 140.0, 0.80, 2.8 },
-    { 115.0, 1.00, 2.2 },
-    {  90.0, 1.20, 1.6 }
+    { 140.0, 0.80, 2.8, 15.0 },
+    { 115.0, 1.00, 2.2, 11.0 },
+    {  90.0, 1.20, 1.6, 8.0 }
 };
 
 static const char *DIFFICULTY_NAMES[DIFFICULTY_COUNT] = {
@@ -789,9 +790,13 @@ static void update_ufos(Game *g)
     g->ufo_timer -= DT;
     if (g->ufo_timer <= 0.0) {
         spawn_ufo(g);
-        g->ufo_timer = 11.0 + rng_double() * 7.0 - (double)g->sector * 1.5;
-        if (g->ufo_timer < 5.0)
-            g->ufo_timer = 5.0;
+        {
+            double base = DIFFICULTIES[g->difficulty].ufo_interval;
+
+            g->ufo_timer = base + rng_double() * 7.0 - (double)g->sector * 1.5;
+            if (g->ufo_timer < 4.0)
+                g->ufo_timer = 4.0;
+        }
     }
 
     for (i = 0; i < GAME_MAX_UFOS; i++) {
