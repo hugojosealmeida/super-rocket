@@ -497,6 +497,7 @@ static void draw_hud(const Game *g, Canvas *c)
     char hull_bar[16];
     char fuel_bar[16];
     char shield_bar[16];
+    char weapon_bar[16];
     char time_text[16];
     char line[160];
     char *fuel_pos;
@@ -512,12 +513,23 @@ static void draw_hud(const Game *g, Canvas *c)
     make_bar(hull_bar, g->hull, GAME_HULL_MAX, 10);
     make_bar(fuel_bar, g->fuel, g->fuel_max, 10);
     make_bar(shield_bar, g->shield, 100.0, 5);
+    {
+        double ready = 1.0;
+
+        if (g->fire_delay > 0.0)
+            ready = 1.0 - g->fire_cooldown / g->fire_delay;
+        if (ready < 0.0)
+            ready = 0.0;
+        if (ready > 1.0)
+            ready = 1.0;
+        make_bar(weapon_bar, ready, 1.0, 5);
+    }
     speed = sqrt(g->player_vx * g->player_vx + g->player_vy * g->player_vy);
 
     snprintf(line, sizeof(line),
-             "HULL [%s] %3.0f%%  FUEL [%s] %3.0f%%  SHD [%s] %3.0f%%  VEL %4.1f",
+             "HULL [%s] %3.0f%%  FUEL [%s] %3.0f%%  SHD [%s] %3.0f%%  WPN[%s]x%d  VEL %4.1f",
              hull_bar, hull_ratio * 100.0, fuel_bar, fuel_ratio * 100.0,
-             shield_bar, g->shield, speed);
+             shield_bar, g->shield, weapon_bar, g->weapon_level, speed);
     draw_text(c, 0, row, line, theme_color(THEME_TEXT));
 
     draw_text(c, 0, row, "HULL", theme_color(THEME_LABEL));
@@ -544,6 +556,16 @@ static void draw_hud(const Game *g, Canvas *c)
         for (x = 0; x < 5; x++)
             put_cell(c, fx + 5 + x, row, shield_bar[x],
                      shield_bar[x] == '#' ? theme_color(THEME_TITLE) : theme_color(THEME_DIM));
+    }
+
+    fuel_pos = strstr(line, "WPN[");
+    if (fuel_pos != NULL) {
+        int fx = (int)(fuel_pos - line);
+
+        draw_text(c, fx, row, "WPN", theme_color(THEME_WARN));
+        for (x = 0; x < 5; x++)
+            put_cell(c, fx + 4 + x, row, weapon_bar[x],
+                     weapon_bar[x] == '#' ? theme_color(THEME_WARN) : theme_color(THEME_DIM));
     }
 
     util_format_time(time_text, sizeof(time_text), g->mission_time);
