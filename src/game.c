@@ -898,6 +898,15 @@ static void update_shots(Game *g)
     }
 }
 
+static int combo_multiplier(const Game *g)
+{
+    int m = 1 + g->combo / 3;
+
+    if (m > 5)
+        m = 5;
+    return m;
+}
+
 static void update_lasers(Game *g)
 {
     int i;
@@ -943,7 +952,9 @@ static void update_lasers(Game *g)
                     g->stats.asteroids_destroyed++;
                     if (g->stats.asteroids_destroyed == 10)
                         game_unlock_achievement(g, ACH_ROCK_BREAKER);
-                    g->score += rock->radius == 2 ? 100 : 50;
+                    g->combo++;
+                    g->combo_timer = 4.0;
+                    g->score += (rock->radius == 2 ? 100 : 50) * combo_multiplier(g);
                     g->shake = 0.35;
 
                     for (j = 0; j < 14; j++) {
@@ -984,7 +995,9 @@ static void update_lasers(Game *g)
                         g->stats.ufos_destroyed++;
                         if (g->stats.ufos_destroyed == 5)
                             game_unlock_achievement(g, ACH_UFO_HUNTER);
-                        g->score += 200;
+                        g->combo++;
+                        g->combo_timer = 4.0;
+                        g->score += 200 * combo_multiplier(g);
                         g->shake = 0.5;
 
                         for (j = 0; j < 20; j++) {
