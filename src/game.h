@@ -203,6 +203,8 @@ typedef struct {
     double toast_timer;
     char toast[48];
     int took_damage;
+    int combo;
+    double combo_timer;
 
     Asteroid asteroids[GAME_MAX_ASTEROIDS];
     Particle particles[GAME_MAX_PARTICLES];

@@ -378,6 +378,8 @@ void game_reset(Game *g)
     g->toast_timer = 0.0;
     g->toast[0] = '\0';
     g->took_damage = 0;
+    g->combo = 0;
+    g->combo_timer = 0.0;
 
     for (i = 0; i < 4; i++)
         g->thrust[i] = 0.0;
@@ -1396,6 +1398,12 @@ void game_update(Game *g)
 
     if (g->toast_timer > 0.0)
         g->toast_timer -= DT;
+
+    if (g->combo_timer > 0.0) {
+        g->combo_timer -= DT;
+        if (g->combo_timer <= 0.0)
+            g->combo = 0;
+    }
 
     if (g->show_help || g->show_scores)
         return;
