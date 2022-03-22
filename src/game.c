@@ -872,6 +872,8 @@ static void update_shots(Game *g)
 
             g->hull -= damage;
             g->took_damage = 1;
+            g->combo = 0;
+            g->combo_timer = 0.0;
             if (g->settings.sound)
                 term_beep();
 
@@ -1381,6 +1383,8 @@ static void update_asteroids(Game *g)
 
             g->hull -= damage;
             g->took_damage = 1;
+            g->combo = 0;
+            g->combo_timer = 0.0;
 
             for (j = 0; j < 10; j++) {
                 double angle = rng_double() * 6.283185307179586;
