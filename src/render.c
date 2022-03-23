@@ -728,6 +728,14 @@ void render_frame(const Game *g)
         draw_menu(g, &c);
     }
 
+    if (g->state == GAME_PLAYING && g->combo >= 3) {
+        char combo_text[24];
+
+        snprintf(combo_text, sizeof(combo_text), "COMBO x%d",
+                 1 + g->combo / 3 > 5 ? 5 : 1 + g->combo / 3);
+        draw_text(&c, 2, 0, combo_text, theme_color(THEME_WARN));
+    }
+
     if (g->state == GAME_PLAYING && g->sector_banner > 0.0) {
         char banner[64];
 
