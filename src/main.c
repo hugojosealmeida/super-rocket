@@ -45,6 +45,10 @@ static void handle_input(Game *g, const TermInput *in, int *running)
             game_start(g);
         } else if (in->digit >= 1 && in->digit <= DIFFICULTY_COUNT) {
             game_set_difficulty(g, (Difficulty)(in->digit - 1));
+        } else if (in->letter == 'X') {
+            game_reset_stats(g);
+            snprintf(g->toast, sizeof(g->toast), "STATISTICS RESET");
+            g->toast_timer = 2.5;
         }
         break;
 

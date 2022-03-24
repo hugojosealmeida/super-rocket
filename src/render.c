@@ -271,7 +271,7 @@ static void draw_menu(const Game *g, Canvas *c)
                          selected ? theme_color(THEME_WARN) : theme_color(THEME_DIM));
     }
 
-    draw_text_center(c, mid, "[ ENTER ] lift off   [ H ] help   [ I ] scores   [ Q ] quit",
+    draw_text_center(c, mid, "[ ENTER ] lift off   [ H ] help   [ I ] scores   [ X ] reset   [ Q ] quit",
                      theme_color(THEME_TEXT));
     draw_text_center(c, mid + 3, "Fly with ARROWS or WASD.", theme_color(THEME_DIM));
     draw_text_center(c, mid + 4, "Thrust burns fuel. Dodge the asteroids.", theme_color(THEME_DIM));
