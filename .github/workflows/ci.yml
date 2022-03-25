@@ -1,0 +1,22 @@
+name: ci
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Build
+        run: make CC=gcc CFLAGS="-std=c99 -O2 -Wall -Wextra -Werror"
+
+      - name: Test
+        run: make test CC=gcc CFLAGS="-std=c99 -O2 -Wall -Wextra -Werror"
+
+      - name: Version
+        run: ./super-rocket --version
