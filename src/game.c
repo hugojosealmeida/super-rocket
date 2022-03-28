@@ -56,6 +56,15 @@ static const char *LEVEL_NAMES[GAME_MAX_LEVELS] = {
     "EARTH TO MARS", "MORE ENEMIES"
 };
 
+static const double LEVEL_ENEMY_SCALE[GAME_MAX_LEVELS] = { 1.0, 0.65 };
+
+static double level_enemy_scale(int level)
+{
+    if (level < 0 || level >= GAME_MAX_LEVELS)
+        return 1.0;
+    return LEVEL_ENEMY_SCALE[level];
+}
+
 const char *game_level_name(int level)
 {
     if (level < 0 || level >= GAME_MAX_LEVELS)
@@ -360,11 +369,11 @@ static void reset_flight(Game *g)
     g->hull = GAME_HULL_MAX;
     g->invuln = 0.0;
     g->shake = 0.0;
-    g->spawn_timer = 3.0;
+    g->spawn_timer = 3.0 * level_enemy_scale(g->level);
     g->pickup_timer = 5.0;
     g->shield = 0.0;
     g->fire_cooldown = 0.0;
-    g->ufo_timer = 9.0;
+    g->ufo_timer = 9.0 * level_enemy_scale(g->level);
     g->sector = 0;
     g->sector_banner = 2.5;
     g->level_banner = 2.5;
@@ -815,7 +824,8 @@ static void update_ufos(Game *g)
         {
             double base = DIFFICULTIES[g->difficulty].ufo_interval;
 
-            g->ufo_timer = base + rng_double() * 7.0 - (double)g->sector * 1.5;
+            g->ufo_timer = (base + rng_double() * 7.0 - (double)g->sector * 1.5) *
+                           level_enemy_scale(g->level);
             if (g->ufo_timer < 4.0)
                 g->ufo_timer = 4.0;
         }
@@ -1378,6 +1388,7 @@ static void update_asteroids(Game *g)
                 sector_factor = 0.5;
 
             g->spawn_timer = g->spawn_interval * sector_factor *
+                             level_enemy_scale(g->level) *
                              (0.7 + rng_double() * 0.6);
         }
     }
