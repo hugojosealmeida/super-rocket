@@ -8,6 +8,7 @@
 #define GAME_MAX_UFOS      6
 #define GAME_MAX_SHOTS     32
 #define GAME_MAX_SECTORS   3
+#define GAME_MAX_LEVELS    2
 #define GAME_MAX_STARS    400
 
 #define GAME_WORLD_LENGTH 1800.0
@@ -184,6 +185,8 @@ typedef struct {
     double ufo_timer;
     int sector;
     double sector_banner;
+    int level;
+    double level_banner;
     UpgradeType upgrades[3];
     int leaderboard_rank;
     char initials[4];
@@ -252,5 +255,6 @@ void game_toggle_sound(Game *g);
 void game_toggle_fps(Game *g);
 const char *game_difficulty_name(Difficulty difficulty);
 const char *game_sector_name(int sector);
+const char *game_level_name(int level);
 
 #endif

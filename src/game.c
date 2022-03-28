@@ -52,6 +52,17 @@ const char *game_sector_name(int sector)
     return SECTOR_NAMES[sector];
 }
 
+static const char *LEVEL_NAMES[GAME_MAX_LEVELS] = {
+    "EARTH TO MARS", "MORE ENEMIES"
+};
+
+const char *game_level_name(int level)
+{
+    if (level < 0 || level >= GAME_MAX_LEVELS)
+        return LEVEL_NAMES[0];
+    return LEVEL_NAMES[level];
+}
+
 const char *game_difficulty_name(Difficulty difficulty)
 {
     if (difficulty < 0 || difficulty >= DIFFICULTY_COUNT)
@@ -336,9 +347,8 @@ void game_init(Game *g, int width, int height)
     g->state = GAME_MENU;
 }
 
-void game_reset(Game *g)
+static void reset_flight(Game *g)
 {
-    const DifficultyConfig *config = &DIFFICULTIES[g->difficulty];
     int i;
 
     g->player_x = GAME_EARTH_RADIUS + 18.0;
@@ -346,38 +356,18 @@ void game_reset(Game *g)
     g->player_vx = 0.0;
     g->player_vy = 0.0;
     g->camera_x = g->player_x - g->width * 0.35;
-    g->fuel_max = config->fuel;
-    g->fuel = config->fuel;
+    g->fuel = g->fuel_max;
     g->hull = GAME_HULL_MAX;
-    g->mission_time = 0.0;
     g->invuln = 0.0;
     g->shake = 0.0;
     g->spawn_timer = 3.0;
     g->pickup_timer = 5.0;
     g->shield = 0.0;
     g->fire_cooldown = 0.0;
-    g->fire_delay = 0.18;
-    g->weapon_level = 1;
     g->ufo_timer = 9.0;
     g->sector = 0;
     g->sector_banner = 2.5;
-    g->upgrades[0] = UPGRADE_HULL;
-    g->upgrades[1] = UPGRADE_FUEL;
-    g->upgrades[2] = UPGRADE_SHIELD;
-    g->leaderboard_rank = -1;
-    g->initials[0] = '\0';
-    g->initials[1] = '\0';
-    g->initials[2] = '\0';
-    g->initials[3] = '\0';
-    g->gravity_scale = config->gravity;
-    g->spawn_interval = config->spawn_interval;
-    g->score = 0;
-    g->new_best = 0;
-    g->show_help = 0;
-    g->show_scores = 0;
-    g->toast_timer = 0.0;
-    g->toast[0] = '\0';
-    g->took_damage = 0;
+    g->level_banner = 2.5;
     g->combo = 0;
     g->combo_timer = 0.0;
 
@@ -401,6 +391,36 @@ void game_reset(Game *g)
 
     for (i = 0; i < GAME_MAX_SHOTS; i++)
         g->shots[i].alive = 0;
+}
+
+void game_reset(Game *g)
+{
+    const DifficultyConfig *config = &DIFFICULTIES[g->difficulty];
+
+    g->level = 0;
+    g->mission_time = 0.0;
+    g->fuel_max = config->fuel;
+    g->fire_delay = 0.18;
+    g->weapon_level = 1;
+    g->upgrades[0] = UPGRADE_HULL;
+    g->upgrades[1] = UPGRADE_FUEL;
+    g->upgrades[2] = UPGRADE_SHIELD;
+    g->leaderboard_rank = -1;
+    g->initials[0] = '\0';
+    g->initials[1] = '\0';
+    g->initials[2] = '\0';
+    g->initials[3] = '\0';
+    g->gravity_scale = config->gravity;
+    g->spawn_interval = config->spawn_interval;
+    g->score = 0;
+    g->new_best = 0;
+    g->show_help = 0;
+    g->show_scores = 0;
+    g->toast_timer = 0.0;
+    g->toast[0] = '\0';
+    g->took_damage = 0;
+
+    reset_flight(g);
 }
 
 void game_set_difficulty(Game *g, Difficulty difficulty)
@@ -1212,6 +1232,9 @@ static void update_player(Game *g)
     if (g->sector_banner > 0.0)
         g->sector_banner -= DT;
 
+    if (g->level_banner > 0.0)
+        g->level_banner -= DT;
+
     {
         if (util_distance(g->player_x, g->player_y, GAME_WORLD_LENGTH, play_mid(g)) <
             GAME_MARS_ORBIT) {
@@ -1221,6 +1244,23 @@ static void update_player(Game *g)
                 bonus = 0.0;
 
             g->score += (int)(g->hull * 8.0 + g->fuel * 6.0 + bonus * 3.0);
+
+            if (g->level < GAME_MAX_LEVELS - 1) {
+                g->score += 250;
+                g->stats.total_distance += (int)g->player_x;
+                g->stats.total_fuel_used += (int)(g->fuel_max - g->fuel);
+                game_save_stats(g);
+                g->level++;
+                reset_flight(g);
+                g->state = GAME_PLAYING;
+                snprintf(g->toast, sizeof(g->toast), "LEVEL %d CLEARED  +250",
+                         g->level);
+                g->toast_timer = 3.0;
+                if (g->settings.sound)
+                    term_beep();
+                return;
+            }
+
             if (g->score > g->best[g->difficulty]) {
                 g->best[g->difficulty] = g->score;
                 g->new_best = 1;
@@ -1230,7 +1270,7 @@ static void update_player(Game *g)
             game_unlock_achievement(g, ACH_FIRST_WIN);
             if (!g->took_damage)
                 game_unlock_achievement(g, ACH_NO_DAMAGE);
-            if (g->mission_time < 75.0)
+            if (g->mission_time < 75.0 * GAME_MAX_LEVELS)
                 game_unlock_achievement(g, ACH_SPEEDRUN);
             g->leaderboard_rank = game_leaderboard_position(g, g->score);
             g->initials[0] = '\0';
