@@ -58,13 +58,18 @@ make test
 - Collect pickups: `F` fuel, `+` repair, `O` shield.
 - Watch out for UFOs — they shoot back.
 - The flight is split into three sectors. Clearing a sector grants an upgrade.
-- Reach the dashed orbit around Mars to complete the mission.
+- Reach the dashed orbit around Mars to clear the level.
+- The campaign has two levels: level 2 repeats the flight with more enemies.
+  Clear it to complete the mission.
 - Chain kills without taking damage to build a combo multiplier.
 - Score is based on remaining hull, fuel, mission time and combat. Your best score
   for each difficulty is kept in `~/.super_rocket_scores`, and the top five pilots
   are stored in `~/.super_rocket_leaderboard`.
 
 Difficulty changes fuel capacity, gravity strength, asteroid frequency and UFO pressure.
+
+Score, mission time and the upgrades you chose carry over into level 2; hull,
+fuel and shield are restored at the start of every level.
 
 ## Project layout
 

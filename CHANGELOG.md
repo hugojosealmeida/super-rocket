@@ -6,6 +6,7 @@ All notable changes to super-rocket are documented here.
 
 ### Added
 - Campaign of three sectors with an upgrade choice between them.
+- Two-level campaign: level 2 repeats the flight with more enemies.
 - Lasers, asteroid hit points and destructible rocks.
 - UFO enemies that fire aimed plasma bolts.
 - Pickups for fuel, repair and shield.

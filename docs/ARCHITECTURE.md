@@ -19,7 +19,7 @@ Owns the frame loop. Reads input through `term_read_input`, dispatches it with
 ### game.c / game.h
 All simulation state lives in the `Game` struct: player, camera, fuel, hull,
 shield, asteroids, pickups, lasers, UFOs, enemy shots, particles, stars,
-sectors, upgrades, statistics and the leaderboard. The module is pure logic -
+sectors, levels, upgrades, statistics and the leaderboard. The module is pure logic -
 it never writes to the screen except for the optional terminal bell. Fixed
 timestep of `DT = 0.033` seconds (~30 fps).
 
@@ -76,7 +76,8 @@ without wiping player data.
 MENU ──enter──> PLAYING ──sector cleared──> UPGRADE ──choose──> PLAYING
                   │                                             │
                   ├──hull 0──> DEAD                             │
-                  └──reaches Mars orbit──> INITIALS? ──> WON <──┘
+                  ├──Mars orbit, level 1──> PLAYING (level 2) <─┘
+                  └──Mars orbit, level 2──> INITIALS? ──> WON
 ```
 
 `PLAYING` runs the simulation. `PAUSED`, `UPGRADE`, `INITIALS`, `WON` and
