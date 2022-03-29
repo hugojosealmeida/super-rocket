@@ -275,7 +275,7 @@ static void draw_menu(const Game *g, Canvas *c)
                      theme_color(THEME_TEXT));
     draw_text_center(c, mid + 3, "Fly with ARROWS or WASD.", theme_color(THEME_DIM));
     draw_text_center(c, mid + 4, "Thrust burns fuel. Dodge the asteroids.", theme_color(THEME_DIM));
-    draw_text_center(c, mid + 5, "Reach Mars orbit to complete the mission.", theme_color(THEME_DIM));
+    draw_text_center(c, mid + 5, "Reach Mars orbit twice; level 2 brings more enemies.", theme_color(THEME_DIM));
 
     {
         char settings_line[96];
@@ -339,7 +339,7 @@ static void draw_help(const Game *g, Canvas *c)
     draw_text_center(c, y + 9, "I               leaderboard", theme_color(THEME_TEXT));
     draw_text_center(c, y + 11, "Collect fuel, shields and repairs.", theme_color(THEME_DIM));
     draw_text_center(c, y + 12, "Shoot asteroids and avoid the UFOs.", theme_color(THEME_DIM));
-    draw_text_center(c, y + 13, "Reach the Mars orbit to win.", theme_color(THEME_DIM));
+    draw_text_center(c, y + 13, "Clear both levels to win. Level 2 has more enemies.", theme_color(THEME_DIM));
     draw_text_center(c, y + 15, "H close help", theme_color(THEME_WARN));
 }
 
@@ -578,8 +578,9 @@ static void draw_hud(const Game *g, Canvas *c)
             progress = 100;
 
         snprintf(line, sizeof(line),
-                 "DIST %4.0f/%.0f %3d%%  S%d/3  TIME %s  %s  P pause  Q menu",
-                 g->player_x, GAME_WORLD_LENGTH, progress, g->sector + 1,
+                 "DIST %4.0f/%.0f %3d%%  L%d/%d  S%d/3  TIME %s  %s  P pause  Q menu",
+                 g->player_x, GAME_WORLD_LENGTH, progress,
+                 g->level + 1, GAME_MAX_LEVELS, g->sector + 1,
                  time_text, game_difficulty_name(g->difficulty));
     }
     draw_text(c, 0, g->height - 1, line, theme_color(THEME_DIM));
@@ -734,6 +735,14 @@ void render_frame(const Game *g)
         snprintf(combo_text, sizeof(combo_text), "COMBO x%d",
                  1 + g->combo / 3 > 5 ? 5 : 1 + g->combo / 3);
         draw_text(&c, 2, 0, combo_text, theme_color(THEME_WARN));
+    }
+
+    if (g->state == GAME_PLAYING && g->level_banner > 0.0) {
+        char banner[64];
+
+        snprintf(banner, sizeof(banner), "LEVEL %d  -  %s",
+                 g->level + 1, game_level_name(g->level));
+        draw_text_center(&c, 3, banner, theme_color(THEME_WARN));
     }
 
     if (g->state == GAME_PLAYING && g->sector_banner > 0.0) {
