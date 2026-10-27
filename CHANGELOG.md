@@ -11,7 +11,10 @@ All notable changes to super-rocket are documented here.
   and stops before entering the alternate screen or raw mode; previously it
   silently drew an 80-column frame that wrapped into unreadable output.  When
   there is no tty to query (pipes, CI) the old 80x23 fallback is kept, so
-  `--version`/`--help` and the pipeline are unaffected.
+  `--version`/`--help` and the pipeline are unaffected.  A tty that answers the
+  size query with 0x0 - an unresized container terminal, e.g. `docker exec -t`
+  - is treated as too small rather than as "no tty", so containerised runs may
+  need `stty rows 24 cols 80` or a resized window.
 
 ### Fixed
 - Saved theme, sound and FPS settings are restored on startup again

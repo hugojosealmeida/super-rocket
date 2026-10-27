@@ -38,7 +38,9 @@ void term_shutdown(void);
  * or the 80x23 default when the size cannot be queried (stdout is no tty,
  * e.g. a pipe in CI).  Returns TERM_SIZE_TOO_SMALL when the terminal reports
  * fewer than TERM_MIN_COLS columns or TERM_MIN_ROWS rows; then *width and
- * *height hold the actual size so the caller can say what was found.
+ * *height hold the actual size so the caller can say what was found.  A tty
+ * that reports 0x0 (an unresized container terminal) counts as too small:
+ * only a failing ioctl keeps the fallback.
  */
 int term_size(int *width, int *height);
 void term_read_input(TermInput *in);

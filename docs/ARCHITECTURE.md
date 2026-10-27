@@ -40,12 +40,13 @@ Platform layer. Puts the terminal in raw mode and stdin in non-blocking mode,
 reads and decodes keys (including escape sequences for arrows), queries the
 window size, emits colored frames and provides `term_beep`.  `term_size()`
 returns `TERM_SIZE_TOO_SMALL` (with the actual size) when the terminal is
-below 40x12, so `main()` can refuse to start before `term_init()` has any
-side effects; when there is no tty to query it keeps the 80x23 fallback used
-by pipes and CI.  `term_shutdown()` puts the terminal back the way the shell
-handed it over: the saved termios settings and the saved stdin file status
-flags (`O_NONBLOCK` belongs to the open file description, so the shell would
-otherwise keep it).
+below 40x12 — including a tty that reports 0x0, such as an unresized container
+terminal — so `main()` can refuse to start before `term_init()` has any side
+effects; only when there is no tty to query does it keep the 80x23 fallback
+used by pipes and CI.  `term_shutdown()` puts the terminal back the way the
+shell handed it over: the saved termios settings and the saved stdin file
+status flags (`O_NONBLOCK` belongs to the open file description, so the shell
+would otherwise keep it).
 
 ### rng.c / rng.h
 Deterministic xorshift64* RNG. Seeded from the clock or from `--seed`, so runs

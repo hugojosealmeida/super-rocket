@@ -100,7 +100,10 @@ int term_size(int *width, int *height)
          * Drawing here would wrap every line and make the ANSI cursor
          * addressing land on the wrong rows: an unreadable screen with the
          * only escape being to quit blind.  Hand the actual size back so the
-         * caller can explain instead of guessing.
+         * caller can explain instead of guessing.  A tty that reports 0x0 (a
+         * container terminal nobody resized) is in the same boat: the ioctl
+         * worked, the terminal says it has no room, and refusing beats drawing
+         * blind on a guessed 80x23 canvas.
          */
         *width = ws.ws_col;
         *height = ws.ws_row;
