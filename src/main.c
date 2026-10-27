@@ -163,6 +163,20 @@ int main(int argc, char **argv)
         double elapsed;
         TermInput input;
 
+        /*
+         * SIGWINCH only raised a flag (async-signal-safe); the ioctl and
+         * the geometry update happen here, in normal context.  A window
+         * that is now too small keeps the last valid geometry on screen
+         * until a later resize fits again.
+         */
+        if (term_size_changed()) {
+            int new_width;
+            int new_height;
+
+            if (term_size(&new_width, &new_height) == TERM_SIZE_OK)
+                game_resize(&game, new_width, new_height);
+        }
+
         term_read_input(&input);
         handle_input(&game, &input, &running);
         game_update(&game);

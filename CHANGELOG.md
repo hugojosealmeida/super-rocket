@@ -5,6 +5,14 @@ All notable changes to super-rocket are documented here.
 ## Unreleased
 
 ### Changed
+- Resizing the terminal window now takes effect immediately (issue #5).
+  `term_init()` handles `SIGWINCH` with a flag-only (async-signal-safe)
+  handler; the game loop notices it through `term_size_changed()`,
+  re-queries `term_size()` and applies the new canvas through the new
+  `game_resize()` helper, which updates only the geometry (width, height,
+  play area, starfield, camera bounds) so score, hull, fuel, position and
+  level are untouched by a resize.  A window dragged below 40x12 keeps the
+  last usable layout instead of drawing wrapped output.
 - `super-rocket` now exits with a clear error when the terminal is too small
   to play in.  Below 40 columns or 12 rows the game prints
   `super-rocket: terminal too small (need at least 40x12, got WxH)` on stderr

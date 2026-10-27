@@ -84,6 +84,7 @@ static void reset_signals(void)
 {
     signal(SIGINT, SIG_DFL);
     signal(SIGTERM, SIG_DFL);
+    signal(SIGWINCH, SIG_DFL);
 }
 
 /* Shutdown before any init must not touch stdin, no matter how often it runs. */
@@ -214,6 +215,42 @@ static void parent_keeps_no_nonblocking_flag(void)
 
     close(fds[0]);
     close(fds[1]);
+}
+
+/*
+ * Issue #5: term_init() also arms SIGWINCH, whose handler must stay
+ * flag-only (async-signal-safe).  term_size_changed() reports the resize
+ * once and clears it, so the game loop re-measures exactly per burst.
+ */
+static void winch_raises_and_consumes_size_flag(void)
+{
+    int muted;
+    int first;
+    int second;
+    int burst;
+
+    muted = mute_stdout();
+    term_init();
+
+    /* drain anything raised by an earlier session */
+    (void)term_size_changed();
+
+    raise(SIGWINCH);
+    first = term_size_changed();
+    second = term_size_changed();
+
+    /* a burst of resizes still reports as a single change to act on */
+    raise(SIGWINCH);
+    raise(SIGWINCH);
+    burst = term_size_changed();
+
+    term_shutdown();
+    unmute_stdout(muted);
+    reset_signals();
+
+    CHECK(first == 1);
+    CHECK(second == 0);
+    CHECK(burst == 1);
 }
 
 /*
@@ -391,6 +428,7 @@ void test_term(void)
     size_falls_back_when_stdout_is_no_tty();
     init_shutdown_restores_stdin_flags();
     parent_keeps_no_nonblocking_flag();
+    winch_raises_and_consumes_size_flag();
 
     reset_signals();
 }

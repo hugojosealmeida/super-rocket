@@ -25,6 +25,11 @@ includes a terminal that reports a 0x0 size, which is what an unresized
 container terminal (`docker exec` without a configured window) does; redirecting
 the output to a pipe or file is unaffected and keeps the old 80x23 fallback.
 
+Resizing the window works during the game: the frame follows the new size
+within one tick, and flight state (score, hull, fuel, position, level) is
+untouched.  Shrinking below 40x12 keeps the last usable layout until the
+window fits again.
+
 Run the test suite with:
 
 ```sh

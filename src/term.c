@@ -1,3 +1,13 @@
+/*
+ * Feature test macros.  SIGWINCH is not in base POSIX: glibc (CI) declares
+ * it unconditionally, but macOS hides it once _POSIX_C_SOURCE is defined
+ * unless _DARWIN_C_SOURCE is on too.  Defining it explicitly keeps the
+ * signal visible on both, exactly like the pty fixtures in test_term.c.
+ */
+#if !defined(_DARWIN_C_SOURCE)
+#define _DARWIN_C_SOURCE 1
+#endif
+
 #define _POSIX_C_SOURCE 199309L
 
 #include "term.h"
@@ -15,11 +25,22 @@ static struct termios saved_termios;
 static int saved_flags = -1;
 static int active = 0;
 static volatile sig_atomic_t stop_requested = 0;
+static volatile sig_atomic_t resize_requested = 0;
 
 static void on_signal(int sig)
 {
     (void)sig;
     stop_requested = 1;
+}
+
+static void on_winch(int sig)
+{
+    (void)sig;
+    /*
+     * Same flag-only pattern as on_signal(): async-signal-safe.  The actual
+     * re-measurement (an ioctl, not signal-safe) happens in the game loop.
+     */
+    resize_requested = 1;
 }
 
 void term_init(void)
@@ -59,6 +80,7 @@ void term_init(void)
 
     signal(SIGINT, on_signal);
     signal(SIGTERM, on_signal);
+    signal(SIGWINCH, on_winch);
 }
 
 void term_shutdown(void)
@@ -135,6 +157,14 @@ void term_sleep(double seconds)
 int term_should_stop(void)
 {
     return stop_requested != 0;
+}
+
+int term_size_changed(void)
+{
+    int changed = resize_requested != 0;
+
+    resize_requested = 0;
+    return changed;
 }
 
 void term_beep(void)

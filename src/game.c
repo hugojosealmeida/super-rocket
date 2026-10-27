@@ -361,6 +361,46 @@ void game_init(Game *g, int width, int height)
     g->state = GAME_MENU;
 }
 
+void game_resize(Game *g, int width, int height)
+{
+    double lo;
+    double hi;
+
+    /*
+     * The main loop only calls this after term_size() reported the new
+     * window as usable, but guard anyway: play_height must stay positive
+     * for the spawn and clamp maths, and the bottom row belongs to the
+     * HUD.  A size we cannot draw is ignored, keeping the last valid
+     * geometry on screen instead of crashing or wrapping.
+     */
+    if (width < 1 || height < 3)
+        return;
+
+    g->width = width;
+    g->height = height;
+    g->play_height = height - 2;
+    g->world_mid = (double)g->play_height / 2.0;
+
+    init_stars(g);
+
+    if (g->state == GAME_MENU)
+        return;
+
+    /*
+     * Keep the camera inside the bounds update_player() clamps its target
+     * to: growing the window lowers the far bound, and without this the
+     * view would sit past the world's edge until the smoothing (which only
+     * runs while PLAYING) pulled it back.
+     */
+    lo = -20.0;
+    hi = GAME_WORLD_LENGTH - (double)g->width + 20.0;
+
+    if (g->camera_x < lo)
+        g->camera_x = lo;
+    else if (g->camera_x > hi)
+        g->camera_x = hi;
+}
+
 static void reset_flight(Game *g)
 {
     int i;

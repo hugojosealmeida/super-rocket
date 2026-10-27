@@ -33,6 +33,18 @@ void term_init(void);
 void term_shutdown(void);
 
 /*
+ * SIGWINCH notification.  term_init() installs a handler for SIGWINCH that
+ * only raises a flag (async-signal-safe: no heap, no stdio, one
+ * volatile sig_atomic_t write), mirroring the stop-request signal pattern.
+ * term_size_changed() reports whether a resize happened since the previous
+ * call and clears the flag, so the game loop can re-query term_size() once
+ * per change burst.  Consecutive resizes while the loop is busy collapse
+ * into a single report, which is correct: one term_size() call afterwards
+ * still sees the newest window dimensions.
+ */
+int term_size_changed(void);
+
+/*
  * Picks the canvas the game draws into.  Returns TERM_SIZE_OK with *width
  * and *height filled: the terminal's own size when ioctl(TIOCGWINSZ) works,
  * or the 80x23 default when the size cannot be queried (stdout is no tty,

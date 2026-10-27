@@ -220,6 +220,21 @@ typedef struct {
 } Game;
 
 void game_init(Game *g, int width, int height);
+
+/*
+ * Applies a new terminal size mid-game (issue #5): updates only the canvas
+ * geometry (width, height, play_height, world_mid) and regenerates the
+ * starfield for the new width, leaving score, hull, fuel, position, level
+ * and all entities untouched, so a resize never interrupts the flight.
+ * The camera is clamped into the same world bounds game_update() steers
+ * towards, which matter when the window grows and the far bound shrinks.
+ * In the menu the camera belongs to the starfield drift instead, so it is
+ * left alone there.  Sizes that cannot host a playable canvas (no columns,
+ * or too few rows for the play area plus the HUD line) are ignored and the
+ * last valid geometry keeps rendering.
+ */
+void game_resize(Game *g, int width, int height);
+
 void game_reset(Game *g);
 void game_start(Game *g);
 void game_update(Game *g);

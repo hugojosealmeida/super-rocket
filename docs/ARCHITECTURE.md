@@ -14,7 +14,11 @@ main.c  ──>  game.c  ──>  rng.c, util.c, storage.c, term.c (beep)
 ### main.c
 Owns the frame loop. Reads input through `term_read_input`, dispatches it with
 `handle_input`, advances the simulation with `game_update` and draws with
-`render_frame`. Also parses command line options and seeds the RNG.
+`render_frame`. Before each frame it also checks `term_size_changed()`: when a
+`SIGWINCH` arrived, it re-queries `term_size()` and applies the result with
+`game_resize`, so live window resizes reflow the canvas while flight state
+stays intact; a too-small terminal keeps the last valid geometry. Also parses
+command line options and seeds the RNG.
 
 ### game.c / game.h
 All simulation state lives in the `Game` struct: player, camera, fuel, hull,
@@ -25,6 +29,8 @@ timestep of `DT = 0.033` seconds (~30 fps).
 
 Key entry points:
 - `game_init` / `game_reset` / `game_start`
+- `game_resize` - re-measures the canvas geometry mid-game without touching
+  the flight state (see the module header comment)
 - `game_update` - advances one frame
 - `game_thrust`, `game_fire`, `game_choose_upgrade`
 - persistence: `game_load/save_scores`, `_settings`, `_stats`, `_leaderboard`
@@ -46,7 +52,11 @@ effects; only when there is no tty to query does it keep the 80x23 fallback
 used by pipes and CI.  `term_shutdown()` puts the terminal back the way the
 shell handed it over: the saved termios settings and the saved stdin file
 status flags (`O_NONBLOCK` belongs to the open file description, so the shell
-would otherwise keep it).
+would otherwise keep it).  `term_init()` installs flag-only signal handlers
+for `SIGINT`/`SIGTERM` (polled with `term_should_stop`) and for `SIGWINCH`
+(polled once per frame with `term_size_changed`, which reports and clears the
+flag so the loop re-measures via `term_size()`); the handlers never touch the
+heap, keeping them async-signal-safe.
 
 ### rng.c / rng.h
 Deterministic xorshift64* RNG. Seeded from the clock or from `--seed`, so runs
