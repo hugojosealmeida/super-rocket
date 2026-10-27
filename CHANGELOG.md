@@ -2,6 +2,14 @@
 
 All notable changes to super-rocket are documented here.
 
+## Unreleased
+
+### Fixed
+- Saved theme, sound and FPS settings are restored on startup again
+  (`game_load_settings` misread the return value of `storage_read_ints`, so the
+  values in `~/.super_rocket_config` were discarded, and an empty or corrupt
+  file read uninitialized memory).
+
 ## 1.0.0 - 2022-03-31
 
 ### Added
