@@ -27,5 +27,6 @@ void test_theme(void);
 void test_campaign(void);
 void test_combat(void);
 void test_term(void);
+void test_version(void);
 
 #endif
