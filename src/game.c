@@ -175,8 +175,8 @@ void game_load_leaderboard(Game *g)
             break;
 
         name[3] = '\0';
-        strncpy(g->leaderboard[i].name, name, sizeof(g->leaderboard[i].name) - 1);
-        g->leaderboard[i].name[sizeof(g->leaderboard[i].name) - 1] = '\0';
+        memcpy(g->leaderboard[i].name, name, 3);
+        g->leaderboard[i].name[3] = '\0';
         g->leaderboard[i].score = score;
         g->leaderboard[i].difficulty = difficulty;
     }
