@@ -80,17 +80,36 @@ void term_shutdown(void)
     active = 0;
 }
 
-void term_size(int *width, int *height)
+int term_size(int *width, int *height)
 {
     struct winsize ws;
 
-    *width = 80;
-    *height = 23;
-
-    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == 0 && ws.ws_col >= 40 && ws.ws_row >= 12) {
-        *width = ws.ws_col;
-        *height = ws.ws_row - 1;
+    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) != 0) {
+        /*
+         * No tty to ask (pipe, CI, redirected output): keep the historical
+         * 80x23 canvas so --version/--help and pipe-safe behaviour stay
+         * exactly as they were.
+         */
+        *width = 80;
+        *height = 23;
+        return TERM_SIZE_OK;
     }
+
+    if (ws.ws_col < TERM_MIN_COLS || ws.ws_row < TERM_MIN_ROWS) {
+        /*
+         * Drawing here would wrap every line and make the ANSI cursor
+         * addressing land on the wrong rows: an unreadable screen with the
+         * only escape being to quit blind.  Hand the actual size back so the
+         * caller can explain instead of guessing.
+         */
+        *width = ws.ws_col;
+        *height = ws.ws_row;
+        return TERM_SIZE_TOO_SMALL;
+    }
+
+    *width = ws.ws_col;
+    *height = ws.ws_row - 1;
+    return TERM_SIZE_OK;
 }
 
 double term_time(void)
