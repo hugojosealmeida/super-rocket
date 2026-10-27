@@ -31,6 +31,12 @@ Run the test suite with:
 make test
 ```
 
+Check that the reported version still matches the changelog with:
+
+```sh
+make check-version
+```
+
 ## Command line options
 
 ```

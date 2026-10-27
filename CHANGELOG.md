@@ -5,6 +5,12 @@ All notable changes to super-rocket are documented here.
 ## Unreleased
 
 ### Changed
+- `GAME_VERSION` is now `1.0.0`, matching the released `1.0.0 - 2022-03-31`
+  section below; `--version` and the menu footer had kept printing `0.9.0`
+  after that release was documented.  `make check-version` (and the CI
+  `Version` step) asserts the printed version equals the newest
+  `## <version>` heading in this changelog so the two cannot drift again,
+  and the unit suite (`make test`) carries the same assertion.
 - `super-rocket` now exits with a clear error when the terminal is too small
   to play in.  Below 40 columns or 12 rows the game prints
   `super-rocket: terminal too small (need at least 40x12, got WxH)` on stderr

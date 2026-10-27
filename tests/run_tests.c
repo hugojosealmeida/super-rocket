@@ -85,6 +85,10 @@ int main(void)
     test_combat();
     test_report("combat", failures);
 
+    failures = test_failures;
+    test_version();
+    test_report("version", failures);
+
     /* term_init/term_shutdown touch this process' stdin, so run them last */
     failures = test_failures;
     test_term();

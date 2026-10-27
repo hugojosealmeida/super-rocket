@@ -19,4 +19,6 @@ jobs:
         run: make test CC=gcc CFLAGS="-std=c99 -O2 -Wall -Wextra -Werror"
 
       - name: Version
-        run: ./super-rocket --version
+        run: |
+          ./super-rocket --version
+          make check-version CC=gcc
