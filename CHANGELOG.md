@@ -13,6 +13,12 @@ All notable changes to super-rocket are documented here.
   choosing an upgrade between sectors or opening the help/leaderboard overlay
   keeps the streak and its timer intact; it only ticks during flight, like
   `mission_time` does.  Toast timers still run in every state.
+- Quitting no longer leaves the terminal in non-blocking mode.  `term_init()`
+  set `O_NONBLOCK` on stdin, a status flag of the open file description shared
+  with the shell, and `term_shutdown()` only restored the termios settings — so
+  after the game, `cat` and every other blocking read in that tab failed with
+  `EAGAIN` until the tab was reopened.  The original flags are now saved and
+  put back on shutdown.
 
 ## 1.0.0 - 2022-03-31
 
