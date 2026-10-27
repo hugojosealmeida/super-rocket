@@ -1,10 +1,33 @@
+/*
+ * Feature test macros for the pty fixtures below.
+ *
+ * posix_openpt(), grantpt(), unlockpt() and ptsname() are XSI extensions on
+ * glibc: posix_openpt() is declared only under __USE_XOPEN2KXSI and the other
+ * three only under __USE_XOPEN_EXTENDED, and features.h turns those on only
+ * for _XOPEN_SOURCE >= 600/500.  CI compiles with -std=c99, which sets
+ * __STRICT_ANSI__, so _POSIX_C_SOURCE alone leaves all four undeclared and
+ * the calls become implicit declarations - fatal under -Werror.  _XOPEN_SOURCE
+ * 700 (UNIX98/SUSv4 plus later, which is exactly where the pty API lives)
+ * fixes that without lowering the POSIX level, and _DARWIN_C_SOURCE keeps the
+ * macOS headers exposing the same symbols.  TIOCSWINSZ and struct winsize need
+ * no extra macro: <sys/ioctl.h> pulls them in unconditionally on Linux.
+ */
 #if !defined(_POSIX_C_SOURCE)
 #define _POSIX_C_SOURCE 200809L
+#endif
+#if !defined(_XOPEN_SOURCE)
+#define _XOPEN_SOURCE 700
+#endif
+#if !defined(_DARWIN_C_SOURCE)
+#define _DARWIN_C_SOURCE 1
 #endif
 
 #include <fcntl.h>
 #include <signal.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/ioctl.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -193,9 +216,179 @@ static void parent_keeps_no_nonblocking_flag(void)
     close(fds[1]);
 }
 
+/*
+ * Issue #4: a terminal smaller than 40x12 used to be silently "handled" by
+ * drawing an 80-column frame into it: every line wrapped, cursor addressing
+ * landed on the wrong rows and the game became unplayable.  term_size() now
+ * answers TERM_SIZE_TOO_SMALL with the actual size, while a stdout without a
+ * tty (pipes, CI) keeps the historical 80x23 fallback.
+ *
+ * The size comes from ioctl(TIOCGWINSZ) on stdout, so each case forks a
+ * child whose stdout is the fixture under test - a pty of a chosen size, or
+ * a pipe - and reports pass/fail through its exit status.
+ */
+
+#define SIZE_SETUP_FAILED 20 /* child could not install its stdout fixture */
+
+static int make_pty_pair(int cols, int rows, int *master, int *slave)
+{
+    struct winsize ws;
+    char *name;
+
+    *master = posix_openpt(O_RDWR | O_NOCTTY);
+    if (*master < 0)
+        return -1;
+
+    if (grantpt(*master) != 0 || unlockpt(*master) != 0) {
+        close(*master);
+        *master = -1;
+        return -1;
+    }
+
+    name = ptsname(*master);
+    if (name == NULL) {
+        close(*master);
+        *master = -1;
+        return -1;
+    }
+
+    *slave = open(name, O_RDWR | O_NOCTTY);
+    if (*slave < 0) {
+        close(*master);
+        *master = -1;
+        return -1;
+    }
+
+    memset(&ws, 0, sizeof(ws));
+    ws.ws_col = (unsigned short)cols;
+    ws.ws_row = (unsigned short)rows;
+    if (ioctl(*slave, TIOCSWINSZ, &ws) != 0 && ioctl(*master, TIOCSWINSZ, &ws) != 0) {
+        close(*slave);
+        close(*master);
+        *slave = -1;
+        *master = -1;
+        return -1;
+    }
+
+    return 0;
+}
+
+static void close_size_fixtures(int master, int slave, const int *fds)
+{
+    if (master >= 0)
+        close(master);
+    if (slave >= 0)
+        close(slave);
+    if (fds[0] >= 0) {
+        close(fds[0]);
+        close(fds[1]);
+    }
+}
+
+/* cols < 0 asks for a pipe on stdout (a size-less, tty-less descriptor). */
+static void check_size_case(const char *label, int cols, int rows,
+                            int want_rc, int want_w, int want_h)
+{
+    int master = -1;
+    int slave = -1;
+    int fds[2] = { -1, -1 };
+    int status = -1;
+    pid_t child;
+
+    if (cols >= 0) {
+        if (make_pty_pair(cols, rows, &master, &slave) != 0) {
+            /*
+             * Skip rather than fail: a sandbox without /dev/ptmx (or with a
+             * restricted /dev/pts mount) cannot offer a pty fixture, and that
+             * says nothing about the size logic under test.  The notice keeps
+             * the skip visible instead of silently shrinking the suite.
+             */
+            fprintf(stderr, "  SKIP term_size %s: no pseudo-terminal available\n",
+                    label);
+            return;
+        }
+    } else if (pipe(fds) != 0) {
+        CHECK(0);
+        return;
+    }
+
+    child = fork();
+    if (child < 0) {
+        /* Return: falling through would hand child == -1 to waitpid(), which
+           means "wait for any child of the test process". */
+        CHECK(0);
+        close_size_fixtures(master, slave, fds);
+        return;
+    }
+
+    if (child == 0) {
+        int rc;
+        int w = -1;
+        int h = -1;
+
+        /* never let a stuck fixture hang the suite */
+        alarm(10);
+
+        if (cols >= 0) {
+            if (dup2(slave, STDOUT_FILENO) < 0)
+                _exit(SIZE_SETUP_FAILED);
+        } else {
+            close(fds[0]);
+            if (dup2(fds[1], STDOUT_FILENO) < 0)
+                _exit(SIZE_SETUP_FAILED);
+        }
+
+        rc = term_size(&w, &h);
+
+        if (rc != want_rc || w != want_w || h != want_h)
+            fprintf(stderr, "  term_size %s: got rc=%d %dx%d, want rc=%d %dx%d\n",
+                    label, rc, w, h, want_rc, want_w, want_h);
+
+        alarm(0);
+        _exit(rc != want_rc || w != want_w || h != want_h);
+    }
+
+    if (waitpid(child, &status, 0) < 0)
+        status = -1;
+
+    close_size_fixtures(master, slave, fds);
+
+    CHECK(WIFEXITED(status) && WEXITSTATUS(status) == 0);
+}
+
+static void size_refuses_terminals_that_are_too_small(void)
+{
+    check_size_case("30x10", 30, 10, TERM_SIZE_TOO_SMALL, 30, 10);
+    /* one row / one column below the minimum on each axis */
+    check_size_case("39x12", 39, 12, TERM_SIZE_TOO_SMALL, 39, 12);
+    check_size_case("40x11", 40, 11, TERM_SIZE_TOO_SMALL, 40, 11);
+    /*
+     * Deliberate decision, not an accident: a tty that answers TIOCGWINSZ with
+     * 0x0 (a container terminal nobody ever resized) is smaller than the
+     * minimum like any other, so it is refused with the size it reports
+     * instead of silently drawing on the 80x23 fallback.  Only a failing ioctl
+     * - no tty at all - keeps the fallback.
+     */
+    check_size_case("0x0", 0, 0, TERM_SIZE_TOO_SMALL, 0, 0);
+}
+
+static void size_accepts_the_smallest_playable_terminal(void)
+{
+    check_size_case("40x12", 40, 12, TERM_SIZE_OK, 40, 11);
+    check_size_case("80x24", 80, 24, TERM_SIZE_OK, 80, 23);
+}
+
+static void size_falls_back_when_stdout_is_no_tty(void)
+{
+    check_size_case("pipe stdout", -1, 0, TERM_SIZE_OK, 80, 23);
+}
+
 void test_term(void)
 {
     shutdown_without_init_is_inert();
+    size_refuses_terminals_that_are_too_small();
+    size_accepts_the_smallest_playable_terminal();
+    size_falls_back_when_stdout_is_no_tty();
     init_shutdown_restores_stdin_flags();
     parent_keeps_no_nonblocking_flag();
 

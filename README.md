@@ -18,6 +18,13 @@ make
 Requires a POSIX terminal with ANSI colors (macOS or Linux) and a C99 compiler.
 There are no external libraries beyond libc and libm.
 
+The terminal must be at least 40 columns by 12 rows. Smaller windows are
+refused with `terminal too small` on stderr before the game touches the
+terminal, instead of drawing a frame that wraps into unreadable output. This
+includes a terminal that reports a 0x0 size, which is what an unresized
+container terminal (`docker exec` without a configured window) does; redirecting
+the output to a pipe or file is unaffected and keeps the old 80x23 fallback.
+
 Run the test suite with:
 
 ```sh

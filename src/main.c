@@ -142,8 +142,17 @@ int main(int argc, char **argv)
     else
         rng_seed_from_clock();
 
+    /*
+     * The size check runs before term_init() so a too-small terminal is
+     * refused with no alt-screen or raw-mode side effects to unwind.
+     */
+    if (term_size(&width, &height) == TERM_SIZE_TOO_SMALL) {
+        fprintf(stderr, "super-rocket: terminal too small (need at least %dx%d, got %dx%d)\n",
+                TERM_MIN_COLS, TERM_MIN_ROWS, width, height);
+        return 1;
+    }
+
     term_init();
-    term_size(&width, &height);
     game_init(&game, width, height);
 
     game.fps = 0.0;
