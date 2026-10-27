@@ -1472,16 +1472,18 @@ void game_update(Game *g)
     if (g->toast_timer > 0.0)
         g->toast_timer -= DT;
 
-    if (g->combo_timer > 0.0) {
-        g->combo_timer -= DT;
-        if (g->combo_timer <= 0.0)
-            g->combo = 0;
-    }
-
     if (g->show_help || g->show_scores)
         return;
 
     if (g->state == GAME_PLAYING) {
+        /* The streak only ticks while the simulation runs: pausing, picking an
+         * upgrade or reading an overlay must not eat it. */
+        if (g->combo_timer > 0.0) {
+            g->combo_timer -= DT;
+            if (g->combo_timer <= 0.0)
+                g->combo = 0;
+        }
+
         g->mission_time += DT;
         update_player(g);
         if (g->state == GAME_PLAYING) {

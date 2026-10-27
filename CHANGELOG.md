@@ -9,6 +9,10 @@ All notable changes to super-rocket are documented here.
   (`game_load_settings` misread the return value of `storage_read_ints`, so the
   values in `~/.super_rocket_config` were discarded, and an empty or corrupt
   file read uninitialized memory).
+- The combo streak no longer decays while the simulation is frozen.  Pausing,
+  choosing an upgrade between sectors or opening the help/leaderboard overlay
+  keeps the streak and its timer intact; it only ticks during flight, like
+  `mission_time` does.  Toast timers still run in every state.
 
 ## 1.0.0 - 2022-03-31
 
