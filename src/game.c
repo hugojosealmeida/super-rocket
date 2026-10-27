@@ -167,14 +167,16 @@ void game_load_leaderboard(Game *g)
         return;
 
     for (i = 0; i < GAME_LEADERBOARD_SIZE; i++) {
-        char name[8];
+        char name[4];
         int score;
         int difficulty;
 
-        if (fscanf(file, "%7s %d %d", name, &score, &difficulty) != 3)
+        if (fscanf(file, "%3s %d %d", name, &score, &difficulty) != 3)
             break;
 
-        snprintf(g->leaderboard[i].name, sizeof(g->leaderboard[i].name), "%s", name);
+        name[3] = '\0';
+        strncpy(g->leaderboard[i].name, name, sizeof(g->leaderboard[i].name) - 1);
+        g->leaderboard[i].name[sizeof(g->leaderboard[i].name) - 1] = '\0';
         g->leaderboard[i].score = score;
         g->leaderboard[i].difficulty = difficulty;
     }
