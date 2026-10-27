@@ -12,6 +12,7 @@
 #include <sys/ioctl.h>
 
 static struct termios saved_termios;
+static int saved_flags = -1;
 static int active = 0;
 static volatile sig_atomic_t stop_requested = 0;
 
@@ -24,6 +25,7 @@ static void on_signal(int sig)
 void term_init(void)
 {
     struct termios raw;
+    int flags;
 
     tcgetattr(STDIN_FILENO, &saved_termios);
 
@@ -34,7 +36,21 @@ void term_init(void)
     raw.c_cc[VTIME] = 0;
 
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
-    fcntl(STDIN_FILENO, F_SETFL, O_NONBLOCK);
+
+    /*
+     * O_NONBLOCK is a status flag of the open file description behind stdin,
+     * not of our descriptor, so the shell that launched the game keeps it after
+     * we exit and every blocking read there starts failing with EAGAIN.  Save
+     * what we inherited (any kind of stdin needs the non-blocking read that
+     * term_read_input() relies on, tty or not) and hand it back in
+     * term_shutdown().  If the original flags cannot be read there is nothing
+     * to restore, so the flag is left alone instead of being leaked.
+     */
+    flags = fcntl(STDIN_FILENO, F_GETFL);
+    if (flags != -1) {
+        saved_flags = flags;
+        fcntl(STDIN_FILENO, F_SETFL, flags | O_NONBLOCK);
+    }
 
     printf("\033[?1049h\033[?25l\033[2J");
     fflush(stdout);
@@ -54,6 +70,13 @@ void term_shutdown(void)
     fflush(stdout);
 
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &saved_termios);
+
+    if (saved_flags != -1) {
+        /* the shell gets its blocking stdin back */
+        fcntl(STDIN_FILENO, F_SETFL, saved_flags);
+        saved_flags = -1;
+    }
+
     active = 0;
 }
 

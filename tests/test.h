@@ -26,5 +26,6 @@ void test_leaderboard(void);
 void test_theme(void);
 void test_campaign(void);
 void test_combat(void);
+void test_term(void);
 
 #endif

@@ -36,9 +36,12 @@ sprite, pickups and lasers are single glyphs. Colors come from the active
 theme via `theme_color(role)`.
 
 ### term.c / term.h
-Platform layer. Puts the terminal in raw mode, reads and decodes keys (including
-escape sequences for arrows), queries the window size, emits colored frames and
-provides `term_beep`.
+Platform layer. Puts the terminal in raw mode and stdin in non-blocking mode,
+reads and decodes keys (including escape sequences for arrows), queries the
+window size, emits colored frames and provides `term_beep`.  `term_shutdown()`
+puts the terminal back the way the shell handed it over: the saved termios
+settings and the saved stdin file status flags (`O_NONBLOCK` belongs to the open
+file description, so the shell would otherwise keep it).
 
 ### rng.c / rng.h
 Deterministic xorshift64* RNG. Seeded from the clock or from `--seed`, so runs

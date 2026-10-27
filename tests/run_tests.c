@@ -85,6 +85,11 @@ int main(void)
     test_combat();
     test_report("combat", failures);
 
+    /* term_init/term_shutdown touch this process' stdin, so run them last */
+    failures = test_failures;
+    test_term();
+    test_report("term", failures);
+
     printf("\n%d checks, %d failures\n", test_checks, test_failures);
 
     /* best effort cleanup of the throwaway home */
