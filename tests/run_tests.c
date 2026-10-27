@@ -58,6 +58,10 @@ int main(void)
     test_report("game", failures);
 
     failures = test_failures;
+    test_settings();
+    test_report("settings", failures);
+
+    failures = test_failures;
     test_leaderboard();
     test_report("leaderboard", failures);
 

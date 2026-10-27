@@ -266,16 +266,19 @@ void game_reset_stats(Game *g)
 void game_load_settings(Game *g)
 {
     int values[3];
+    int read;
 
     g->settings.theme = 0;
     g->settings.sound = 1;
     g->settings.show_fps = 0;
 
-    if (storage_read_ints(".super_rocket_config", values, 3) == 0) {
-        g->settings.theme = util_clamp_int(values[0], 0, GAME_THEME_COUNT - 1);
-        g->settings.sound = values[1] != 0;
-        g->settings.show_fps = values[2] != 0;
-    }
+    read = storage_read_ints(".super_rocket_config", values, 3);
+    if (read <= 0)
+        return;
+
+    if (read > 0) g->settings.theme = util_clamp_int(values[0], 0, GAME_THEME_COUNT - 1);
+    if (read > 1) g->settings.sound = values[1] != 0;
+    if (read > 2) g->settings.show_fps = values[2] != 0;
 }
 
 void game_save_settings(const Game *g)
