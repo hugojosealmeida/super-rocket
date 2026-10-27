@@ -15,6 +15,18 @@ TEST_SRC := tests/run_tests.c tests/test_util.c tests/test_rng.c \
             tests/test_version.c \
             src/game.c src/rng.c src/util.c src/storage.c src/theme.c src/term.c
 
+# ASan/UBSan build of the same unit suite (make test-san). The flags are
+# deliberately fixed instead of reusing CFLAGS so the sanitizer net cannot
+# be configured away: -g keeps reports mapped to source lines, -O1 keeps
+# builds fast, -fno-sanitize-recover makes every UBSan report fatal (exit
+# non-zero) instead of just printing it, -fno-omit-frame-pointer keeps the
+# stack traces readable. Requires a compiler with ASan/UBSan support (gcc
+# or clang); CI runs it on ubuntu-latest. Opt-in locally, mandatory in CI.
+TEST_BIN_SAN := tests/run_tests_san
+SAN_CFLAGS   := -std=c99 -g -O1 -Wall -Wextra \
+                -fsanitize=address,undefined -fno-sanitize-recover=all \
+                -fno-omit-frame-pointer
+
 CHANGELOG := CHANGELOG.md
 
 all: $(BIN)
@@ -27,6 +39,12 @@ $(TEST_BIN): $(TEST_SRC) tests/test.h $(HDR)
 
 test: $(TEST_BIN)
 	./$(TEST_BIN)
+
+$(TEST_BIN_SAN): $(TEST_SRC) tests/test.h $(HDR)
+	$(CC) $(SAN_CFLAGS) -Isrc -o $@ $(TEST_SRC) $(LDFLAGS) $(LDLIBS)
+
+test-san: $(TEST_BIN_SAN)
+	UBSAN_OPTIONS=print_stacktrace=1 ./$(TEST_BIN_SAN)
 
 # Assert that the version `./super-rocket --version` prints (GAME_VERSION,
 # also used by the menu footer) matches the newest released `## <version>`
@@ -47,10 +65,10 @@ check-version: $(BIN)
 	echo "check-version: super-rocket $$printed matches $(CHANGELOG)"
 
 clean:
-	rm -f $(BIN) $(TEST_BIN)
-	rm -rf tests/run_tests.dSYM
+	rm -f $(BIN) $(TEST_BIN) $(TEST_BIN_SAN)
+	rm -rf tests/run_tests.dSYM tests/run_tests_san.dSYM
 
 run: $(BIN)
 	./$(BIN)
 
-.PHONY: all clean run test check-version
+.PHONY: all clean run test test-san check-version

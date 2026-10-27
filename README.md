@@ -31,6 +31,21 @@ Run the test suite with:
 make test
 ```
 
+Run the same suite under AddressSanitizer and UndefinedBehaviorSanitizer with:
+
+```sh
+make test-san
+```
+
+This builds `tests/run_tests_san` with `-std=c99 -g -O1 -Wall -Wextra
+-fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer`
+(fixed flags, documented in the `Makefile`). It is opt-in locally because the
+sanitizers need `-g` and make the build and run slower, but it is mandatory in
+CI: the `test-san` job in `.github/workflows/ci.yml` runs `make test-san
+CC=gcc` on every push and pull request, and any sanitizer report fails it.
+Leak detection is part of ASan on Linux; on macOS it is not supported and the
+runs only check memory errors and undefined behaviour.
+
 Check that the reported version still matches the changelog with:
 
 ```sh

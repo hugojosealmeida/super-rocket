@@ -22,3 +22,16 @@ jobs:
         run: |
           ./super-rocket --version
           make check-version CC=gcc
+
+  # Memory-safety net: builds the same unit suite with AddressSanitizer and
+  # UndefinedBehaviorSanitizer (flags live in the Makefile's test-san target)
+  # and runs it. ubuntu-latest ships both runtimes with gcc, so no extra
+  # install step is needed. Any ASan/UBSan report exits non-zero and gates
+  # merges; no suppressions are configured for the current code.
+  test-san:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Test with ASan and UBSan
+        run: make test-san CC=gcc

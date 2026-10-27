@@ -4,6 +4,16 @@ All notable changes to super-rocket are documented here.
 
 ## Unreleased
 
+### Added
+- `make test-san` builds and runs the unit suite as `tests/run_tests_san` with
+  AddressSanitizer and UndefinedBehaviorSanitizer
+  (`-std=c99 -g -O1 -fsanitize=address,undefined -fno-sanitize-recover=all
+  -fno-omit-frame-pointer`, see the `Makefile`), and a new `test-san` CI job
+  runs `make test-san CC=gcc` on ubuntu-latest for every push and pull
+  request, so off-by-one indexing in the `GAME_MAX_*` entity pools or the
+  hand-rolled file parsing fails the pipeline instead of shipping silently.
+  The plain `make test` stays as the fast local run.
+
 ### Changed
 - `GAME_VERSION` is now `1.0.0`, matching the released `1.0.0 - 2022-03-31`
   section below; `--version` and the menu footer had kept printing `0.9.0`
