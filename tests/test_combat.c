@@ -17,6 +17,28 @@ static void clear_enemies(Game *g)
         g->pickups[i].alive = 0;
 }
 
+/*
+ * Issue #2: the streak timer is game time, not wall-clock time. While the
+ * simulation is frozen (paused, upgrade screen, help or leaderboard overlay)
+ * a 200 frame stall must leave the combo and its timer untouched.
+ */
+static void combo_survives_frozen_simulation(Game *g)
+{
+    int i;
+
+    clear_enemies(g);
+    g->combo = 9;
+    g->combo_timer = 4.0;
+    g->mission_time = 0.0;
+
+    for (i = 0; i < 200; i++)
+        game_update(g);
+
+    CHECK(g->combo == 9);
+    CHECK(g->combo_timer == 4.0);
+    CHECK(g->mission_time == 0.0);
+}
+
 void test_combat(void)
 {
     Game g;
@@ -25,6 +47,8 @@ void test_combat(void)
     Laser *laser;
     EnemyShot *shot;
     Pickup *pickup;
+    int i;
+    double timer;
 
     game_init(&g, 100, 30);
     game_start(&g);
@@ -91,4 +115,96 @@ void test_combat(void)
     shot->alive = 1;
     game_update(&g);
     CHECK(g.hull == 86.0);
+
+    /* --- combo streak only ticks in game time (issue #2) --- */
+
+    game_init(&g, 100, 30);
+    game_start(&g);
+    game_pause(&g);
+    CHECK(g.state == GAME_PAUSED);
+    combo_survives_frozen_simulation(&g);
+
+    game_resume(&g);
+    CHECK(g.state == GAME_PLAYING);
+    g.state = GAME_UPGRADE;
+    combo_survives_frozen_simulation(&g);
+
+    game_init(&g, 100, 30);
+    game_start(&g);
+    g.show_help = 1;
+    combo_survives_frozen_simulation(&g);
+    g.show_help = 0;
+    g.show_scores = 1;
+    combo_survives_frozen_simulation(&g);
+    g.show_scores = 0;
+
+    /*
+     * A streak earned just before a sector boundary survives the whole
+     * upgrade screen, and keeps its remaining time when flight resumes.
+     */
+    game_init(&g, 100, 30);
+    game_start(&g);
+    clear_enemies(&g);
+    g.combo = 6;
+    g.combo_timer = 4.0;
+    g.state = GAME_UPGRADE;
+    for (i = 0; i < 120; i++)
+        game_update(&g);
+    CHECK(g.combo == 6);
+    CHECK(g.combo_timer == 4.0);
+    game_choose_upgrade(&g, 0);
+    CHECK(g.state == GAME_PLAYING);
+    for (i = 0; i < 30; i++) {
+        clear_enemies(&g);
+        game_update(&g);
+    }
+    CHECK(g.combo == 6);
+    timer = g.combo_timer;
+    CHECK(timer < 4.0 && timer > 2.5);
+
+    /*
+     * While the world really is flying, decay behaves exactly as before:
+     * 4.0s of game time burns the streak down to zero.
+     */
+    game_init(&g, 100, 30);
+    game_start(&g);
+    clear_enemies(&g);
+    g.combo = 9;
+    g.combo_timer = 4.0;
+    for (i = 0; i < 60; i++) {
+        clear_enemies(&g);
+        game_update(&g);
+    }
+    CHECK(g.state == GAME_PLAYING);
+    CHECK(g.combo == 9);
+    timer = g.combo_timer;
+    CHECK(timer > 1.9 && timer < 2.1);
+    for (i = 0; i < 70; i++) {
+        clear_enemies(&g);
+        game_update(&g);
+    }
+    CHECK(g.state == GAME_PLAYING);
+    CHECK(g.combo == 0);
+    CHECK(g.combo_timer <= 0.0);
+
+    /* Toasts still fade in every state, including the frozen ones. */
+    game_init(&g, 100, 30);
+    CHECK(g.state == GAME_MENU);
+    g.toast_timer = 2.5;
+    for (i = 0; i < 100; i++)
+        game_update(&g);
+    CHECK(g.toast_timer <= 0.0);
+
+    game_init(&g, 100, 30);
+    game_start(&g);
+    g.show_help = 1;
+    g.combo = 9;
+    g.combo_timer = 4.0;
+    g.toast_timer = 2.5;
+    for (i = 0; i < 10; i++)
+        game_update(&g);
+    CHECK(g.toast_timer < 2.5);
+    CHECK(g.toast_timer > 2.0);
+    CHECK(g.combo == 9);
+    CHECK(g.combo_timer == 4.0);
 }
