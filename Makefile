@@ -4,8 +4,8 @@ LDLIBS  ?= -lm
 LDFLAGS ?=
 
 BIN     := super-rocket
-SRC     := src/main.c src/game.c src/render.c src/term.c src/rng.c src/util.c src/storage.c src/theme.c
-HDR     := src/game.h src/render.h src/term.h src/rng.h src/util.h src/storage.h src/theme.h
+SRC     := src/main.c src/app.c src/game.c src/render.c src/term.c src/rng.c src/util.c src/storage.c src/theme.c
+HDR     := src/app.h src/game.h src/render.h src/term.h src/rng.h src/util.h src/storage.h src/theme.h
 
 TEST_BIN := tests/run_tests
 TEST_SRC := tests/run_tests.c tests/test_util.c tests/test_rng.c \
