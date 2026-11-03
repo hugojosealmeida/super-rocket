@@ -18,6 +18,7 @@ static char cells[80 * 23];
 static unsigned char palette[80 * 23];
 static unsigned int version;
 static int beep;
+static int visible = 1;
 #ifdef __EMSCRIPTEN__
 EM_JS(void, browser_save, (), {
     if (Module['onSave']) Module['onSave']();
@@ -75,6 +76,15 @@ void rocket_blur(void)
     if (initialized && game.state == GAME_PLAYING)
         game_pause(&game);
 }
+
+void rocket_visibility(int active)
+{
+    visible = active != 0;
+    if (!visible)
+        rocket_blur();
+}
+
+int rocket_visible(void) { return visible; }
 
 const char *rocket_chars(void) { return cells; }
 const unsigned char *rocket_colors(void) { return palette; }

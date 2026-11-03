@@ -161,6 +161,7 @@ const { execFileSync } = require('node:child_process');
     assert.deepEqual([...((await wasm.body()).subarray(0, 4))], [0, 97, 115, 109]);
     assert.ok(requests.every(url => url.startsWith(base)), 'only same-directory static requests');
     assert.deepEqual(errors, []);
+    assert.ok((await page.locator('#error-help').textContent()).includes('HTTP'));
     console.log(engine + ': actual WASM bootstrap and nested static hosting PASS');
   } finally {
     if (browser) await browser.close();

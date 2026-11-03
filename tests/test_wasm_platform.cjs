@@ -45,3 +45,6 @@ callbacks.blur(); assert.equal(events.at(-1), 'clear');
 const count = events.length;
 callbacks.keydown(event('w', {ctrlKey:true})); assert.equal(events.length, count);
 console.log('WASM focus, tap retention and autorepeat input edges PASS');
+assert.equal(platform.capabilities().wasm, typeof WebAssembly === 'object');
+assert.equal(typeof platform.capabilities().raf, 'boolean');
+console.log('WASM capability detection PASS');

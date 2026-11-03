@@ -29,6 +29,7 @@ jobs:
               node tests/test_wasm_browser.cjs dist/wasm-test "$browser"
               node tests/test_wasm_browser.cjs dist/wasm "$browser"
             done
+            node tests/test_wasm_failure.cjs dist/wasm-test
           '
 
   build:
