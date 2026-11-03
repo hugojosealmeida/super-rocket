@@ -133,9 +133,12 @@ GET /key?clear=1       ----------------->   window lost focus, release all
   a lost connection. Window blur also releases held keys.
 - **One game per server.** The server runs one shared game. Every connected
   browser sees the same screen, and key presses from any browser control it.
-  Scores, statistics and settings use the same files as the terminal version
-  (`~/.super_rocket_*`), so the terminal and web versions share one record.
-  Per-player saves are not part of this version.
+  Scores, statistics and settings use the existing file formats under
+  `~/.super_rocket_web/` (override with `--data-dir DIR`). Terminal files are
+  untouched. All browsers visiting one server share that server's record;
+  per-player saves and cookies are not part of this version. Run separate
+  servers with separate ports/directories for independent games. Do not run
+  two servers against the same save directory concurrently.
 - **Network safety.** The server binds to `127.0.0.1` by default. Requests are
   limited to `HTTP_MAX_REQUEST` bytes, only `GET` is accepted, and only the
   paths the server serves are answered (see `src/http.c`).

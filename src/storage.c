@@ -2,12 +2,26 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 static char path_buffer[1024];
+static char save_directory[900];
+
+int storage_set_directory(const char *directory)
+{
+    if (directory == NULL) {
+        save_directory[0] = '\0';
+        return 0;
+    }
+    if (!directory[0] || strlen(directory) >= sizeof(save_directory))
+        return -1;
+    strcpy(save_directory, directory);
+    return 0;
+}
 
 const char *storage_path(const char *filename)
 {
-    const char *home = getenv("HOME");
+    const char *home = save_directory[0] ? save_directory : getenv("HOME");
 
     if (home != NULL)
         snprintf(path_buffer, sizeof(path_buffer), "%s/%s", home, filename);
