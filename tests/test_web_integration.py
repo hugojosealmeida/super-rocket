@@ -1,0 +1,150 @@
+"""Real-socket tests; no third-party Python packages required."""
+import os
+from pathlib import Path
+import re
+import signal
+import socket
+import subprocess
+import sys
+import tempfile
+import time
+import unittest
+
+BINARY = str(Path(sys.argv.pop(1)).resolve())
+
+
+class WebIntegration(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.home = tempfile.TemporaryDirectory(prefix="rocket-web-tests-")
+        with socket.socket() as probe:
+            probe.bind(("127.0.0.1", 0))
+            cls.port = probe.getsockname()[1]
+        cls.process = subprocess.Popen(
+            [BINARY, str(cls.port)],
+            env=dict(os.environ, HOME=cls.home.name),
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        deadline = time.monotonic() + 5
+        while time.monotonic() < deadline:
+            if cls.process.poll() is not None:
+                raise RuntimeError(cls.process.communicate())
+            try:
+                with socket.create_connection(("127.0.0.1", cls.port), 0.2):
+                    break
+            except OSError:
+                time.sleep(0.02)
+        else:
+            cls.process.kill()
+            raise RuntimeError("server startup timed out")
+        cls.token = re.search(rb'var token = "([0-9a-f]{32})"', cls.get("/play")).group(1).decode()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.process.send_signal(signal.SIGTERM)
+        out, err = cls.process.communicate(timeout=5)
+        cls.home.cleanup()
+        if cls.process.returncode != 0 or b"ERROR:" in err or b"runtime error:" in err:
+            raise AssertionError((cls.process.returncode, out, err))
+
+    @classmethod
+    def raw(cls, data):
+        with socket.create_connection(("127.0.0.1", cls.port), 2) as sock:
+            sock.settimeout(3)
+            sock.sendall(data)
+            response = bytearray()
+            while True:
+                try:
+                    part = sock.recv(65536)
+                except ConnectionResetError:
+                    if response:
+                        return bytes(response)
+                    raise
+                if not part:
+                    return bytes(response)
+                response.extend(part)
+
+    @classmethod
+    def get(cls, target):
+        return cls.raw(("GET " + target + " HTTP/1.0\r\n\r\n").encode())
+
+    def test_index_and_page(self):
+        page = self.get("/")
+        self.assertIn(b"200 OK", page)
+        self.assertIn(b'/play', page)
+        self.assertIn(b'/frame', page)
+        page = self.get("/play")
+        self.assertIn(b"SUPER ROCKET", page)
+        self.assertIn(b"COLS=80 ROWS=23", page)
+        header, body = page.split(b"\r\n\r\n", 1)
+        self.assertEqual(int(re.search(rb"Content-Length: (\d+)", header).group(1)), len(body))
+
+    def test_bad_routes_and_methods(self):
+        for target in ("/absent", "/../etc/passwd", "/%2e%2e/etc/passwd", "/a\\b"):
+            with self.subTest(target=target):
+                self.assertIn(b"404 Not Found", self.get(target))
+        self.assertIn(b"405 Method Not Allowed", self.raw(b"POST / HTTP/1.0\r\n\r\n"))
+        self.assertIn(b"400 Bad Request", self.raw(b"GET / HTTP/2.0\r\n\r\n"))
+        self.assertIn(b"400 Bad Request", self.raw(b"GET /\x00evil HTTP/1.0\r\n\r\n"))
+        self.assertIn(b"413 Request Entity Too Large", self.raw(b"G" * 8192))
+        self.assertIn(b"200 OK", self.get("/"))  # survived every malformed request
+
+    def test_fragmented_request(self):
+        with socket.create_connection(("127.0.0.1", self.port), 2) as sock:
+            sock.settimeout(3)
+            sock.sendall(b"GET / HTTP/1.0\r\n")
+            time.sleep(0.05)
+            sock.sendall(b"Host: localhost\r\n\r\n")
+            self.assertIn(b"200 OK", sock.recv(32768))
+
+    def test_slow_client_does_not_block(self):
+        with socket.create_connection(("127.0.0.1", self.port), 2) as slow:
+            slow.settimeout(7)
+            slow.sendall(b"GET / HTTP/1.0\r\nUnfinished: ")
+            start = time.monotonic()
+            self.assertIn(b"200 OK", self.get("/"))
+            self.assertLess(time.monotonic() - start, 1)
+            self.assertEqual(slow.recv(1024), b"")  # absolute read deadline
+
+    def test_keys_and_frames(self):
+        self.assertIn(b"403 Forbidden", self.get("/key?d=13"))
+        self.assertIn(b"403 Forbidden", self.get("/key?t=wrong&d=13"))
+        for action in ("clear=1", "d=13", "u=13", "d=87", "u=87"):
+            reply = self.get("/key?t=" + self.token + "&" + action)
+            self.assertIn(b"image/gif", reply)
+            self.assertIn(b"GIF89a", reply)
+        for action in ("d=-1", "d=256", "d=%00", "d=%xx", "clear=0", "d=13&u=13"):
+            with self.subTest(action=action):
+                self.assertIn(b"400 Bad Request", self.get("/key?t=" + self.token + "&" + action))
+        time.sleep(0.1)
+        frame = self.get("/frame")
+        self.assertIn(b"screen.value", frame)
+        self.assertIn(b"setTimeout", frame)
+        self.assertNotIn(b"WebAssembly", frame)
+
+    def test_connection_limit_and_recovery(self):
+        peers = []
+        try:
+            for _ in range(16):
+                peers.append(socket.create_connection(("127.0.0.1", self.port), 2))
+                peers[-1].sendall(b"GET / HTTP/1.0\r\n")
+            time.sleep(0.1)
+            self.assertIn(b"503 Service Unavailable", self.get("/"))
+        finally:
+            for peer in peers:
+                peer.close()
+        time.sleep(0.1)
+        self.assertIn(b"200 OK", self.get("/"))
+
+    def test_cli_errors(self):
+        for args in (["0"], ["65536"], ["-1"], ["abc"], ["--bind"], ["--bind", "invalid"],
+                     ["8080", "8081"], [str(self.port)]):
+            with self.subTest(args=args):
+                result = subprocess.run([BINARY] + args, capture_output=True, timeout=3)
+                self.assertNotEqual(result.returncode, 0)
+        result = subprocess.run([BINARY, "--version"], capture_output=True, timeout=3)
+        self.assertEqual(result.returncode, 0)
+        self.assertIn(b"1.0.0", result.stdout)
+
+
+if __name__ == "__main__":
+    unittest.main()

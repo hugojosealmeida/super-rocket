@@ -51,8 +51,24 @@ int http_parse_request(const char *buf, size_t len, HttpRequest *req)
     req->path[0] = '\0';
     req->query[0] = '\0';
 
+    if (len > HTTP_MAX_REQUEST)
+        return HTTP_TOO_LARGE;
+
     if (head_end == NULL)
         return len >= HTTP_MAX_REQUEST ? HTTP_TOO_LARGE : HTTP_INCOMPLETE;
+
+    /* Reject embedded NULs and controls rather than parsing truncated strings. */
+    {
+        size_t i;
+        size_t head_len = (size_t)(head_end - buf) + end_len;
+        for (i = 0; i < head_len; i++) {
+            unsigned char c = (unsigned char)buf[i];
+            if ((c < 32 && c != '\r' && c != '\n' && c != '\t') || c == 127)
+                return HTTP_BAD_REQUEST;
+            if (c == '\r' && (i + 1 >= head_len || buf[i + 1] != '\n'))
+                return HTTP_BAD_REQUEST;
+        }
+    }
 
     line_end = memchr(buf, '\n', len);
     if (line_end == NULL)
@@ -151,6 +167,8 @@ int http_url_decode(const char *in, char *out, size_t size)
             if (lo < 0)
                 return -1;
             c = (char)(hi * 16 + lo);
+            if ((unsigned char)c < 32 || (unsigned char)c == 127)
+                return -1;
             in += 3;
         } else {
             if (c == '+')

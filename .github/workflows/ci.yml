@@ -18,6 +18,9 @@ jobs:
       - name: Test
         run: make test CC=gcc CFLAGS="-std=c99 -O2 -Wall -Wextra -Werror"
 
+      - name: Web server and integration tests
+        run: make test-web CC=gcc CFLAGS="-std=c99 -O2 -Wall -Wextra -Werror"
+
       - name: Version
         run: |
           ./super-rocket --version

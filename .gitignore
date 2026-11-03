@@ -2,3 +2,7 @@ super-rocket
 *.o
 *.dSYM/
 tests/run_tests
+super-rocket-web
+tests/run_web_tests
+tests/run_tests_san
+tests/run_web_tests_san
