@@ -33,9 +33,9 @@ static const ColorEntry colors[] = {
 
 /*
  * Forwards key presses to the server with image requests, so the page never
- * navigates away.  JavaScript 1.1 only: Netscape reads e.which, Internet
- * Explorer 3 reads window.event.keyCode.  Arrows and Space return false so the
- * page does not scroll.
+ * navigates away. Legacy ES3 syntax; keyboard APIs varied across historical
+ * browsers (see docs/BROWSER_COMPATIBILITY.md). Arrows and Space return false
+ * so the page does not scroll.
  */
 static const char key_script[] =
     "<SCRIPT LANGUAGE=\"JavaScript\">\n"
