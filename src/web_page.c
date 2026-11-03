@@ -242,7 +242,7 @@ int web_play_document(char *out, size_t size, const char *token)
 
 int web_update_document(char *out, size_t size, const char *chars, int width,
                         int height, unsigned long version, int changed,
-                        unsigned char text_color)
+                        unsigned char text_color, int beep)
 {
     Writer w;
     char tail[1024];
@@ -275,6 +275,8 @@ int web_update_document(char *out, size_t size, const char *chars, int width,
         }
         put(&w, "\";\n");
     }
+    if (beep)
+        put(&w, "  p.document.forms[0].screen.value += '\\x07';\n");
     snprintf(tail, sizeof(tail),
         "  p.document.fgColor = '%s';\n"
         "  setTimeout(\"location.replace('/frame?v=%lu&r=\" + Math.random() + \"')\", 100);\n"

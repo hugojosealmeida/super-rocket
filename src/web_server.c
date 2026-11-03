@@ -111,7 +111,7 @@ int web_respond(const char *head, size_t len, char *out, size_t size, int *strea
         }
         (void)colors;
         n = web_update_document(page, sizeof(page), chars, width, height, version,
-                                changed, theme_color(THEME_TITLE));
+                                changed, theme_color(THEME_TITLE), web_term_take_beep());
     } else if (strcmp(req.path, "/key") == 0) {
         /* A random per-server capability prevents other websites sending keys. */
         char token[40];
@@ -214,7 +214,7 @@ void web_server_service(int listen_fd, double timeout)
         fds[i + 1].events = clients[i].out_len ? POLLOUT : POLLIN;
         fds[i + 1].revents = 0;
     }
-    ready = poll(fds, MAX_CLIENTS + 1, (int)(timeout * 1000.0));
+    ready = poll(fds, MAX_CLIENTS + 1, timeout > 0 ? (int)(timeout * 1000.0) + 1 : 0);
     now = term_time();
     if (now - last_key > 2.0)
         keys_release_all(); /* Lost tab, lost network, or missed key-up. */
