@@ -100,6 +100,10 @@ can be opened over any state and pause the simulation while open.
 
 ## Web version
 
+The separate static WebAssembly frontend is specified in
+[its architecture decision](WASM_ARCHITECTURE.md). The C-server design below
+remains available and is not replaced by that frontend.
+
 The web version is the same game in a 1990s-style browser page. It targets
 late-1990s frame-capable browsers (historical compatibility is not yet verified), and it is served by
 the C program `super-rocket-web` (`make web`). The terminal build is unchanged.
