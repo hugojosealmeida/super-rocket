@@ -61,7 +61,7 @@ void test_version(void)
     int n;
 
     /* The version printed by `super-rocket --version` and the menu footer. */
-    CHECK(strcmp(GAME_VERSION, "1.0.0") == 0);
+    CHECK(strcmp(GAME_VERSION, "1.1.0") == 0);
 
     documented[0] = '\0';
     n = changelog_latest_version(documented, sizeof(documented));
