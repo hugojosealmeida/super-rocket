@@ -89,6 +89,10 @@ int main(void)
     test_version();
     test_report("version", failures);
 
+    failures = test_failures;
+    test_http();
+    test_report("http", failures);
+
     /* term_init/term_shutdown touch this process' stdin, so run them last */
     failures = test_failures;
     test_term();

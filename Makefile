@@ -12,8 +12,9 @@ TEST_SRC := tests/run_tests.c tests/test_util.c tests/test_rng.c \
             tests/test_storage.c tests/test_game.c tests/test_settings.c \
             tests/test_leaderboard.c tests/test_theme.c \
             tests/test_campaign.c tests/test_combat.c tests/test_term.c \
-            tests/test_version.c \
-            src/game.c src/rng.c src/util.c src/storage.c src/theme.c src/term.c
+            tests/test_version.c tests/test_http.c \
+            src/game.c src/rng.c src/util.c src/storage.c src/theme.c src/term.c \
+            src/http.c
 
 CHANGELOG := CHANGELOG.md
 
