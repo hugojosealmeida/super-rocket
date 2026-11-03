@@ -135,6 +135,12 @@ GET /key?clear=1       ----------------->   window lost focus, release all
   One-shot keys (pause, theme, help and so on) are queued once.
   Held keys are renewed every 500 ms; a two-second lease releases them after
   a lost connection. Window blur also releases held keys.
+- **Timing and sound.** A monotonic server clock schedules 30 simulation ticks
+  per second, independently of browser polling or monitor refresh. Short stalls
+  catch up; a long suspend discards excess backlog. Sound starts off on every
+  server launch. M toggles the game preference; sound events deliver ASCII BEL
+  to the textarea, a best-effort legacy notification. Most browsers remain
+  silent. No plugin or audio API is required and silence is a supported outcome.
 - **One game per server.** The server runs one shared game. Every connected
   browser sees the same screen, and key presses from any browser control it.
   Scores, statistics and settings use the existing file formats under

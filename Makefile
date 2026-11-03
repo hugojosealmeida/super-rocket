@@ -7,8 +7,8 @@ BIN     := super-rocket
 SRC     := src/main.c src/app.c src/game.c src/render.c src/term.c src/rng.c src/util.c src/storage.c src/theme.c
 HDR     := src/app.h src/game.h src/render.h src/term.h src/rng.h src/util.h src/storage.h src/theme.h
 WEB_BIN := super-rocket-web
-WEB_SRC := src/web_main.c src/web_server.c src/web_term.c src/app.c src/game.c src/render.c src/rng.c src/util.c src/storage.c src/theme.c src/http.c src/keys.c src/web_page.c
-WEB_HDR := $(HDR) src/http.h src/keys.h src/web_page.h src/web_term.h src/web_server.h
+WEB_SRC := src/web_main.c src/web_server.c src/web_term.c src/web_clock.c src/app.c src/game.c src/render.c src/rng.c src/util.c src/storage.c src/theme.c src/http.c src/keys.c src/web_page.c
+WEB_HDR := $(HDR) src/http.h src/keys.h src/web_page.h src/web_term.h src/web_server.h src/web_clock.h
 WEB_TEST_BIN := tests/run_web_tests
 WEB_TEST_SRC := tests/run_web_tests.c $(filter-out src/web_main.c,$(WEB_SRC))
 SANFLAGS := -std=c99 -O1 -g -Wall -Wextra -Werror -fsanitize=address,undefined -fno-omit-frame-pointer

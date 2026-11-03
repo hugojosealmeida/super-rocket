@@ -161,7 +161,7 @@ class WebIntegration(unittest.TestCase):
         native.write_text("999\n888\n777\n")
         data = Path(self.home.name) / ".super_rocket_web"
         config = data / ".super_rocket_config"
-        config.write_text("1\n0\n1\n")
+        config.write_text("1\n1\n1\n")
         scores = data / ".super_rocket_scores"
         scores.write_text("123\n456\n789\n")
         leaderboard = data / ".super_rocket_leaderboard"
@@ -170,6 +170,7 @@ class WebIntegration(unittest.TestCase):
         # Both a fresh HTTP client and a reload see the same saved game/theme.
         self.assertIn(b"#FFFF55", self.get("/frame"))
         self.assertIn(b"#FFFF55", self.get("/frame"))
+        self.assertIn(b"sound:off", self.get("/frame"))
         self.get("/key?t=" + cls.token + "&d=84")  # T -> mono
         self.get("/key?t=" + cls.token + "&u=84")
         deadline = time.monotonic() + 2

@@ -14,8 +14,8 @@
 #include "term.h"
 #include "web_server.h"
 #include "web_term.h"
+#include "web_clock.h"
 
-#define FRAME_TIME (1.0 / 30.0)
 static volatile sig_atomic_t stopping;
 
 static void stop_server(int sig)
@@ -112,10 +112,7 @@ int main(int argc, char **argv)
                 game_to_menu(&game);
             app_step(&game);
             game.fps = 30.0;
-            next += FRAME_TIME;
-            /* Bound catch-up after a long suspend; never simulate minutes at once. */
-            if (next < now - FRAME_TIME * 4)
-                next = now + FRAME_TIME;
+            next = web_tick_after(next, now);
         }
         now = term_time();
         web_server_service(fd, next > now ? next - now : 0.0);

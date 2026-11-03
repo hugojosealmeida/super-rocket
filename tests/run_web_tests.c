@@ -17,6 +17,7 @@
 #include "render.h"
 #include "storage.h"
 #include "theme.h"
+#include "web_clock.h"
 
 int test_failures;
 int test_checks;
@@ -175,11 +176,41 @@ int main(void)
     term_beep();
     CHECK(web_term_take_beep() == 1);
     CHECK(web_term_take_beep() == 0);
+    {
+        double before = term_time();
+        term_sleep(-1);
+        term_sleep(0.001);
+        CHECK(term_time() >= before);
+    }
 
-    CHECK(web_update_document(out, sizeof(out), "</script>\\\"\n", 12, 1, 3, 1, 97) > 0);
+    CHECK(web_update_document(out, sizeof(out), "</script>\\\"\n", 12, 1, 3, 1, 97, 0) > 0);
     CHECK(strstr(out, "\\x3c/script\\x3e") != NULL);
-    CHECK(web_update_document(out, 1, "x", 1, 1, 1, 1, 97) == -1);
-    CHECK(web_update_document(out, sizeof(out), "x", 81, 1, 1, 1, 97) == -1);
+    CHECK(web_update_document(out, 1, "x", 1, 1, 1, 1, 97, 0) == -1);
+    CHECK(web_update_document(out, sizeof(out), "x", 81, 1, 1, 1, 97, 0) == -1);
+    CHECK(web_update_document(out, sizeof(out), "x", 1, 1, 1, 1, 97, 1) > 0);
+    CHECK(strstr(out, "\\x07") != NULL);
+    CHECK(web_update_document(out, sizeof(out), "x", 1, 1, 1, 1, 97, 0) > 0);
+    CHECK(strstr(out, "\\x07") == NULL);
+    /* A fixed simulation clock is independent of the browser display cadence. */
+    {
+        const int rates[] = { 20, 30, 60, 120, 1000 };
+        size_t r;
+        for (r = 0; r < sizeof(rates)/sizeof(rates[0]); r++) {
+            double next = 0;
+            int ticks = 0;
+            int step;
+            for (step = 0; step < rates[r] * 10; step++) {
+                double now = (double)step / rates[r];
+                while (now >= next) {
+                    ticks++;
+                    next = web_tick_after(next, now);
+                }
+            }
+            CHECK(ticks >= 298 && ticks <= 301);
+        }
+        CHECK(web_tick_after(1.0, 1000.0) > 1000.0); /* resume skips backlog */
+        CHECK(web_tick_after(1.0, 1.05) < 1.05); /* short lag can catch up */
+    }
     CHECK(web_play_document(out, sizeof(out), "'\"</script>") == -1);
     CHECK(web_index_document(out, 8) == -1);
     test_frame_states();

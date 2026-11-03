@@ -18,7 +18,7 @@ int web_index_document(char *out, size_t size);
 int web_play_document(char *out, size_t size, const char *token);
 int web_update_document(char *out, size_t size, const char *chars, int width,
                         int height, unsigned long version, int changed,
-                        unsigned char text_color);
+                        unsigned char text_color, int beep);
 
 /*
  * Writes one HTML 3.2 document that shows the frame (width x height
