@@ -91,3 +91,45 @@ MENU ──enter──> PLAYING ──sector cleared──> UPGRADE ──choose
 `PLAYING` runs the simulation. `PAUSED`, `UPGRADE`, `INITIALS`, `WON` and
 `DEAD` freeze it and show an overlay. The help (H) and leaderboard (I) panels
 can be opened over any state and pause the simulation while open.
+
+## Web version
+
+The web version is the same game in a 1990s-style browser page. It targets
+Netscape Navigator 2 and later (HTML 3.2, JavaScript 1.1), and it is served by
+the C program `super-rocket-web` (`make web`). The terminal build is unchanged.
+
+```
+browser (HTML 3.2 page)                     super-rocket-web (C)
+-----------------------                     -----------------------------
+GET /                  ----------------->   page (src/web_page.c)
+GET /screen            ----------------->   multipart/x-mixed-replace stream,
+                                            one HTML frame per game tick
+JS onkeydown / onkeyup
+GET /key?d=CODE        ----------------->   held-key state (src/keys.c)
+GET /key?u=CODE        ----------------->   released key
+GET /key?clear=1       ----------------->   window lost focus, release all
+```
+
+### Decisions
+
+- **Language and runtime.** The game logic stays in C. The server is plain C99
+  with POSIX sockets and no external libraries. Browsers only run HTML and a
+  small JavaScript 1.1 snippet, which forwards key presses. Old browsers cannot
+  read the keyboard without scripting, so this snippet is required.
+- **Screen refresh.** The screen is pushed with `multipart/x-mixed-replace`,
+  which Netscape Navigator 1.1 and later support. Each part is a complete HTML
+  page holding the frame in a monospace `<textarea>`. This keeps one connection
+  open for the whole game, and the browser does not reload the page. Internet
+  Explorer 3 does not support server push, so it shows the first frame only.
+- **Keyboard.** Key presses are sent as image requests (`new Image().src`), so
+  the page never navigates away from the game. The server answers `204 No
+  Content`. Arrows and WASD hold thrust and fire until the key is released.
+  One-shot keys (pause, theme, help and so on) are queued once.
+- **One game per server.** The server runs one shared game. Every connected
+  browser sees the same screen, and key presses from any browser control it.
+  Scores, statistics and settings use the same files as the terminal version
+  (`~/.super_rocket_*`), so the terminal and web versions share one record.
+  Per-player saves are not part of this version.
+- **Network safety.** The server binds to `127.0.0.1` by default. Requests are
+  limited to `HTTP_MAX_REQUEST` bytes, only `GET` is accepted, and only the
+  paths the server serves are answered (see `src/http.c`).
