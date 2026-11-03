@@ -197,7 +197,11 @@ void game_save_leaderboard(const Game *g)
         fprintf(file, "%s %d %d\n", g->leaderboard[i].name,
                 g->leaderboard[i].score, g->leaderboard[i].difficulty);
 
-    fclose(file);
+    {
+        int failed = ferror(file);
+        if (fclose(file) == 0 && !failed)
+            storage_notify_modified();
+    }
 }
 
 void game_load_stats(Game *g)

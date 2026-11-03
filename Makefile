@@ -42,6 +42,7 @@ tests/wasm_parity: tests/wasm_parity.c src/wasm_main.c src/app.c src/game.c src/
 test-wasm-build:
 	python3 tests/test_wasm_build.py
 	node tests/test_wasm_platform.cjs
+	node tests/test_wasm_storage.cjs
 
 test-wasm: tests/wasm_parity
 	node tests/test_wasm_browser.cjs dist/wasm-test $(BROWSER)
@@ -101,7 +102,7 @@ clean:
 	rm -f $(BIN) $(TEST_BIN) $(WEB_BIN) $(WEB_TEST_BIN)
 	rm -f tests/run_tests_san tests/run_web_tests_san tests/super-rocket-web-san
 	rm -rf tests/run_tests.dSYM
-	rm -f dist/wasm/rocket.js dist/wasm/rocket.wasm dist/wasm/index.html dist/wasm/client.js dist/wasm/platform.js
+	rm -f dist/wasm/rocket.js dist/wasm/rocket.wasm dist/wasm/index.html dist/wasm/client.js dist/wasm/platform.js dist/wasm/storage.js
 	rm -f tests/wasm_parity
 
 run: $(BIN)

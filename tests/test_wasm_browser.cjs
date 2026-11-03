@@ -12,7 +12,7 @@ const { execFileSync } = require('node:child_process');
   const engine = process.argv[3] || 'chromium';
   const prefix = '/games/rocket/';
   const types = { '.html': 'text/html', '.js': 'text/javascript', '.wasm': 'application/wasm' };
-  const allowed = new Set(['index.html', 'rocket.js', 'rocket.wasm', 'client.js', 'platform.js']);
+  const allowed = new Set(['index.html', 'rocket.js', 'rocket.wasm', 'client.js', 'platform.js', 'storage.js']);
   const server = http.createServer((req, res) => {
     const url = new URL(req.url, 'http://localhost');
     const file = url.pathname.startsWith(prefix) ? url.pathname.slice(prefix.length) || 'index.html' : '';
@@ -66,10 +66,36 @@ const { execFileSync } = require('node:child_process');
     await page.keyboard.press('r'); await waitText('LEVEL 1');
     await page.keyboard.press('q'); await waitText('lift off');
     await page.keyboard.press('Escape'); await waitText('lift off');
+    const saved = await page.evaluate(() => JSON.parse(localStorage.getItem(RocketStorage.key)));
+    assert.equal(saved.schema, 1);
+    assert.match(saved.files['.super_rocket_config'], /^1\s/);
+    await page.reload();
+    await waitText('theme:amber');
+    await page.evaluate(() => localStorage.setItem('unrelated-site-data', 'keep'));
+    page.once('dialog', dialog => dialog.accept());
+    await page.locator('#reset-saves').click();
+    await waitText('theme:classic');
+    assert.equal(await page.evaluate(() => localStorage.getItem('unrelated-site-data')), 'keep');
+    const isolated = await browser.newContext();
+    const fresh = await isolated.newPage();
+    await fresh.goto(base);
+    await fresh.waitForFunction(() => document.getElementById('screen').textContent.includes('theme:classic'));
+    await isolated.close();
+    // Preload all file categories before C initialization, including leaderboard stdio.
+    await page.evaluate(() => localStorage.setItem(RocketStorage.key, JSON.stringify({schema:1, files:{
+      '.super_rocket_config':'1\n0\n0\n', '.super_rocket_scores':'111\n222\n333\n',
+      '.super_rocket_stats':'1\n0\n1\n0\n0\n0\n0\n0\n0\n0\n0\n',
+      '.super_rocket_leaderboard':'ALX 12345 1\n'
+    }})));
+    await page.reload(); await waitText('theme:amber'); await waitText('best 111');
+    await screen.click(); await page.keyboard.press('i'); await waitText('ALX');
+    await page.keyboard.press('i'); await waitAbsent('T O P   P I L O T S');
     const state = await page.evaluate(async () => {
-      const module = await createRocketModule();
+      let adapter, captured = null;
+      const module = await createRocketModule({onSave() { if (adapter) adapter.flush(); }});
       if (!module._rocket_snapshot) return null; // Inspection exists only in test builds.
-      module.FS.mkdir('/saves'); module._rocket_init(123);
+      adapter = RocketStorage.open(module, () => ({getItem(){return null;}, setItem(key,value){captured=value;}}));
+      module._rocket_init(123);
       const snapshot = () => JSON.parse(module.UTF8ToString(module._rocket_snapshot()));
       module._rocket_key(13, 1); module._rocket_tick(); module._rocket_key(13, 0);
       for (let i = 0; i < 120; i++) {
@@ -99,6 +125,10 @@ const { execFileSync } = require('node:child_process');
         RocketPlatform.draw(module, testScreen, -1);
         screens.push(testScreen.textContent);
       }
+      for (const code of [72, 73, 80, 13]) {
+        module._rocket_key(code, 1); module._rocket_tick(); module._rocket_key(code, 0);
+      }
+      const leaderboard = JSON.parse(captured).files['.super_rocket_leaderboard'];
       module._rocket_init(123);
       RocketPlatform.draw(module, testScreen, -1);
       const classic = [...testScreen.querySelectorAll('font')].map(font => font.color);
@@ -106,7 +136,7 @@ const { execFileSync } = require('node:child_process');
       RocketPlatform.draw(module, testScreen, -1);
       const amber = [...testScreen.querySelectorAll('font')].map(font => font.color);
       testScreen.remove();
-      return { played, paused, stillPaused, independent, invalid, resumed, reset: snapshot(), screens, classic, amber };
+      return { played, paused, stillPaused, independent, invalid, resumed, reset: snapshot(), screens, classic, amber, leaderboard };
     });
     if (state) {
       const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'rocket-parity-'));
@@ -122,6 +152,7 @@ const { execFileSync } = require('node:child_process');
       assert.equal(state.reset.time, 0);
       assert.equal(state.invalid, 0);
       assert.notDeepEqual(state.amber, state.classic);
+      assert.match(state.leaderboard, /HIP 12345/); // C stdio -> hook -> browser snapshot
       for (const [i, expected] of ['lift off', 'EARTH', 'PAUSED', 'MARS ORBIT ACHIEVED', 'MISSION FAILED', 'SECTOR CLEARED', 'INITIALS'].entries())
         assert.ok(state.screens[i].includes(expected), 'C game screen ' + i);
     }

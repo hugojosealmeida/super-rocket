@@ -8,9 +8,13 @@ P: pause/resume. R: restart. Q/Esc: menu. T: theme. M: mute. F: FPS.
 H: help. I: local leaderboard. 1–3: difficulty/upgrade. X: reset statistics.
 Letters/Backspace: leaderboard initials. Losing focus pauses flight; press P to resume.</p>
 <p id="status" role="status">Loading WebAssembly. JavaScript and WebAssembly must be enabled.</p>
+<p id="storage-status" role="status"></p>
+<p>Each page runs its own C rocket. Scores/nicknames are local, editable records—not accounts or a global ranking.</p>
+<button id="reset-saves" type="button">Reset browser saves</button>
 <noscript>This frontend needs JavaScript and WebAssembly. The terminal and C-server versions remain available.</noscript>
 <table bgcolor="#000000" cellpadding="8"><tr><td nowrap><pre id="screen" tabindex="0" role="application" aria-label="Game. Enter launches; H shows controls." style="font:16px/18px 'Courier New',Courier,monospace;color:white;white-space:pre">Loading the C game...</pre></td></tr></table>
 <script src="rocket.js" defer></script>
 <script src="platform.js" defer></script>
+<script src="storage.js" defer></script>
 <script src="client.js" defer></script>
 </body></html>
