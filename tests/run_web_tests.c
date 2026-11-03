@@ -13,6 +13,10 @@
 #include "web_page.h"
 #include "web_server.h"
 #include "web_term.h"
+#include "game.h"
+#include "render.h"
+#include "storage.h"
+#include "theme.h"
 
 int test_failures;
 int test_checks;
@@ -23,6 +27,55 @@ static int request(const char *target, char *out, size_t size)
     int stream = -1;
     snprintf(head, sizeof(head), "GET %s HTTP/1.0\r\n\r\n", target);
     return web_respond(head, strlen(head), out, size, &stream);
+}
+
+static void test_frame_states(void)
+{
+    Game g;
+    char document[16384];
+    const char *chars;
+    const unsigned char *colors;
+    int width, height;
+    unsigned long version;
+    size_t i;
+    static const struct { GameState state; const char *expected; } cases[] = {
+        { GAME_MENU, "lift off" }, { GAME_PLAYING, "EARTH" },
+        { GAME_PAUSED, "PAUSED" }, { GAME_UPGRADE, "SECTOR CLEARED" },
+        { GAME_INITIALS, "INITIALS" }, { GAME_WON, "MARS ORBIT ACHIEVED" },
+        { GAME_DEAD, "MISSION FAILED" }
+    };
+    memset(&g, 0, sizeof(g));
+    /* Renderer tests never read or write the developer's actual save files. */
+    storage_set_directory("/nonexistent/rocket-render-tests");
+    game_init(&g, 80, 23);
+    for (i = 0; i < sizeof(cases)/sizeof(cases[0]); i++) {
+        g.state = cases[i].state;
+        render_frame(&g);
+        web_term_latest(&chars, &colors, &width, &height, &version);
+        CHECK(web_frame_document(document, sizeof(document), chars, width, height, 97) > 0);
+        CHECK(strstr(document, cases[i].expected) != NULL);
+        CHECK(strchr(document, '\033') == NULL); /* never emit terminal escapes */
+    }
+    g.show_help = 1;
+    render_frame(&g);
+    web_term_latest(&chars, &colors, &width, &height, &version);
+    CHECK(web_frame_document(document, sizeof(document), chars, width, height, 97) > 0);
+    CHECK(strstr(document, "H O W   T O   F L Y") != NULL);
+    g.show_help = 0; g.show_scores = 1;
+    render_frame(&g);
+    web_term_latest(&chars, &colors, &width, &height, &version);
+    CHECK(web_frame_document(document, sizeof(document), chars, width, height, 97) > 0);
+    CHECK(strstr(document, "T O P   P I L O T S") != NULL);
+    g.show_scores = 0;
+    for (i = 0; i < 3; i++) {
+        static const char *expected[] = { "#55FFFF", "#FFFF55", "#FFFFFF" };
+        g.settings.theme = (int)i;
+        render_frame(&g);
+        CHECK(request("/frame", document, sizeof(document)) > 0);
+        CHECK(strstr(document, expected[i]) != NULL);
+    }
+    theme_set(0);
+    storage_set_directory(NULL);
 }
 
 int main(void)
@@ -129,6 +182,7 @@ int main(void)
     CHECK(web_update_document(out, sizeof(out), "x", 81, 1, 1, 1, 97) == -1);
     CHECK(web_play_document(out, sizeof(out), "'\"</script>") == -1);
     CHECK(web_index_document(out, 8) == -1);
+    test_frame_states();
     web_server_shutdown(fd);
     /* Startup/shutdown must not close stdin, including the zero-initialized slots. */
     CHECK(fcntl(STDIN_FILENO, F_GETFL) == stdin_flags);

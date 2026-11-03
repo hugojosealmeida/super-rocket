@@ -170,7 +170,7 @@ int web_frame_document(char *out, size_t size, const char *chars, int width, int
     int x;
     int y;
 
-    if (width <= 0 || height <= 0 || size == 0)
+    if (width <= 0 || height <= 0 || width > 80 || height > 23 || size == 0)
         return -1;
 
     if (snprintf(head, sizeof(head),

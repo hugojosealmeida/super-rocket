@@ -10,7 +10,7 @@ WEB_BIN := super-rocket-web
 WEB_SRC := src/web_main.c src/web_server.c src/web_term.c src/app.c src/game.c src/render.c src/rng.c src/util.c src/storage.c src/theme.c src/http.c src/keys.c src/web_page.c
 WEB_HDR := $(HDR) src/http.h src/keys.h src/web_page.h src/web_term.h src/web_server.h
 WEB_TEST_BIN := tests/run_web_tests
-WEB_TEST_SRC := tests/run_web_tests.c src/web_server.c src/web_term.c src/http.c src/keys.c src/web_page.c src/theme.c
+WEB_TEST_SRC := tests/run_web_tests.c $(filter-out src/web_main.c,$(WEB_SRC))
 SANFLAGS := -std=c99 -O1 -g -Wall -Wextra -Werror -fsanitize=address,undefined -fno-omit-frame-pointer
 
 TEST_BIN := tests/run_tests
