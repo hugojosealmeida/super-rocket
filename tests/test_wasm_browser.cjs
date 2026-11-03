@@ -111,6 +111,11 @@ const { execFileSync } = require('node:child_process');
         module._rocket_tick();
       }
       const played = snapshot();
+      const refreshBefore = module._rocket_frame();
+      module._rocket_tick();
+      const refreshAfterOne = module._rocket_frame();
+      module._rocket_tick();
+      const refreshAfterTwo = module._rocket_frame();
       module._rocket_blur(); module._rocket_tick();
       const paused = snapshot();
       module._rocket_tick();
@@ -141,7 +146,8 @@ const { execFileSync } = require('node:child_process');
       RocketPlatform.draw(module, testScreen, -1);
       const amber = [...testScreen.querySelectorAll('font')].map(font => font.color);
       testScreen.remove();
-      return { played, paused, stillPaused, independent, invalid, resumed, reset: snapshot(), screens, classic, amber, leaderboard };
+      return { played, paused, stillPaused, independent, invalid, resumed, reset: snapshot(), screens, classic, amber, leaderboard,
+        refreshBefore, refreshAfterOne, refreshAfterTwo };
     });
     if (state) {
       const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'rocket-parity-'));
@@ -156,6 +162,8 @@ const { execFileSync } = require('node:child_process');
       assert.equal(state.independent.state, 0);
       assert.equal(state.reset.time, 0);
       assert.equal(state.invalid, 0);
+      assert.equal(state.refreshAfterOne, state.refreshBefore + 1);
+      assert.equal(state.refreshAfterTwo, state.refreshAfterOne + 1);
       assert.notDeepEqual(state.amber, state.classic);
       assert.match(state.leaderboard, /HIP 12345/); // C stdio -> hook -> browser snapshot
       for (const [i, expected] of ['lift off', 'EARTH', 'PAUSED', 'MARS ORBIT ACHIEVED', 'MISSION FAILED', 'SECTOR CLEARED', 'INITIALS'].entries())

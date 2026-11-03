@@ -72,11 +72,8 @@ void term_draw(const char *chars, const unsigned char *colors, int width, int he
         return;
 
     cells = width * height;
-    if (width == frame_width && height == frame_height &&
-        memcmp(frame_chars, chars, (size_t)cells) == 0 &&
-        memcmp(frame_colors, colors, (size_t)cells) == 0)
-        return;
-
+    /* Keep a version for every C render call so the browser can repaint at
+       the native 30 Hz cadence, even when adjacent frames are identical. */
     memcpy(frame_chars, chars, (size_t)cells);
     memcpy(frame_colors, colors, (size_t)cells);
     frame_width = width;

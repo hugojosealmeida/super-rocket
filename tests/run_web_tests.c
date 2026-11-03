@@ -161,18 +161,19 @@ int main(void)
     CHECK(memcmp(chars, "ABCD", 4) == 0);
     term_draw("ABCD", (const unsigned char *)"aaaa", 2, 2);
     web_term_latest(&chars, &colors, &width, &height, &v);
-    CHECK(v == 1); /* unchanged frame is not re-sent */
+    CHECK(v == 2); /* identical frames still preserve terminal refresh cadence */
     term_draw("ABCD", (const unsigned char *)"bbbb", 2, 2);
     web_term_latest(&chars, &colors, &width, &height, &v);
-    CHECK(v == 2); /* color changes count too */
+    CHECK(v == 3); /* color changes count too */
     term_draw("x", (const unsigned char *)"x", 999, 999);
     web_term_latest(&chars, &colors, &width, &height, &v);
-    CHECK(v == 2);
+    CHECK(v == 3); /* rejected dimensions do not create a frame */
     CHECK(request("/frame", out, sizeof(out)) > 0);
     CHECK(strstr(out, "AB\\nCD") != NULL);
-    CHECK(request("/frame?v=2", out, sizeof(out)) > 0);
+    CHECK(request("/frame?v=3", out, sizeof(out)) > 0);
     CHECK(strstr(out, "AB\\nCD") == NULL);
     CHECK(strstr(out, "setTimeout") != NULL);
+    CHECK(strstr(out, ", 33);") != NULL); /* browser refresh targets 30 Hz */
     term_beep();
     CHECK(web_term_take_beep() == 1);
     CHECK(web_term_take_beep() == 0);

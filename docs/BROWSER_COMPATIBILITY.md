@@ -78,8 +78,9 @@ test network; do not use it to visit arbitrary Internet sites.
 
 ## Intentional limitations
 
-- Screen snapshots poll at approximately 10 Hz; the C simulation runs at 30 Hz.
-  Network latency is visible; this is intended for local/trusted-LAN play.
+- Screen snapshots target approximately 30 Hz, matching the C simulation and
+  terminal refresh cadence. Network latency and browser scheduling remain
+  visible in the C-server version; it is intended for local/trusted-LAN play.
 - The game is a black 80×23 monospace panel on a white page. The C renderer's
   color buffer is converted to per-run FONT colors inside PRE, preserving spaces,
   line breaks and theme changes. ANSI codes map to a fixed RGB palette; an

@@ -127,8 +127,9 @@ GET /key?clear=1       ----------------->   window lost focus, release all
   with POSIX sockets and no external libraries. Browsers only run HTML and a
   small ES3-syntax snippet, which forwards key presses. Browsers cannot
   read the keyboard without scripting, so this snippet is required.
-- **Screen refresh.** A hidden frame polls every 100 ms and copies changed
-  colored HTML into the visible page's fixed monospace panel. Physics still runs at 30 ticks per
+- **Screen refresh.** A hidden frame polls about every 33 ms and copies each
+  rendered colored HTML frame into the visible page's fixed monospace panel.
+  Physics and browser refresh both target 30 ticks per
   second. This replaces the initial server-push proposal: reloading the keyboard
   document would discard held-key state and focus. No fetch, XHR, canvas or
   WebAssembly is used. Frames are a period browser extension, not HTML 3.2
@@ -142,6 +143,9 @@ GET /key?clear=1       ----------------->   window lost focus, release all
   Only adjacent cells with the same color are grouped. The C server HTML-escapes
   characters, then JavaScript-string-escapes the markup for transport. The
   stable SPAN's innerHTML is updated without replacing the keyboard document.
+  The browser repaints even when two consecutive C frames contain identical
+  characters/colors, matching the terminal's visible refresh cadence. Network
+  latency and browser scheduling can still make the C-server version less exact.
   Buffer limits cover the worst case of a color change on every cell.
 - **Keyboard.** Key presses are sent as image requests (`new Image().src`), so
   the page never navigates away from the game. The server answers with a tiny

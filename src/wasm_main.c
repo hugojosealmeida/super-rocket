@@ -111,12 +111,11 @@ void term_draw(const char *chars, const unsigned char *colors, int width, int he
 {
     if (width != 80 || height != 23)
         return;
-    if (version == 0 || memcmp(cells, chars, sizeof(cells)) ||
-        memcmp(palette, colors, sizeof(palette))) {
-        memcpy(cells, chars, sizeof(cells));
-        memcpy(palette, colors, sizeof(palette));
-        version++;
-    }
+    /* The terminal visibly refreshes every simulation frame. Keep that
+       cadence in the browser even when the character/color data is stable. */
+    memcpy(cells, chars, sizeof(cells));
+    memcpy(palette, colors, sizeof(palette));
+    version++;
 }
 
 #ifdef ROCKET_TEST
