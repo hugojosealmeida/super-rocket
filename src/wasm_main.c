@@ -18,6 +18,11 @@ static char cells[80 * 23];
 static unsigned char palette[80 * 23];
 static unsigned int version;
 static int beep;
+#ifdef __EMSCRIPTEN__
+EM_JS(void, browser_save, (), {
+    if (Module['onSave']) Module['onSave']();
+});
+#endif
 
 const char *rocket_version(void)
 {
@@ -32,6 +37,7 @@ void rocket_init(unsigned int seed)
     beep = 0;
 #ifdef __EMSCRIPTEN__
     storage_set_directory("/saves");
+    storage_set_modified_hook(browser_save);
 #endif
     rng_seed(seed);
     game_init(&game, 80, 23);
@@ -108,6 +114,7 @@ void rocket_test_state(int state)
 {
     if (state >= GAME_MENU && state <= GAME_INITIALS) {
         game.state = (GameState)state;
+        if (state == GAME_INITIALS) { game.leaderboard_rank = 0; game.score = 12345; }
         render_frame(&game);
     }
 }

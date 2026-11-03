@@ -6,6 +6,10 @@
 
 static char path_buffer[1024];
 static char save_directory[900];
+static void (*modified_hook)(void);
+
+void storage_set_modified_hook(void (*hook)(void)) { modified_hook = hook; }
+void storage_notify_modified(void) { if (modified_hook) modified_hook(); }
 
 int storage_set_directory(const char *directory)
 {
@@ -61,6 +65,11 @@ int storage_write_ints(const char *filename, const int *values, int count)
     for (i = 0; i < count; i++)
         fprintf(file, "%d\n", values[i]);
 
-    fclose(file);
+    {
+        int failed = ferror(file);
+        if (fclose(file) != 0 || failed)
+            return -1;
+    }
+    storage_notify_modified();
     return 0;
 }

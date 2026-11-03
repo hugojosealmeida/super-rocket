@@ -3,14 +3,18 @@
     const status = document.getElementById('status');
     try {
         if (typeof WebAssembly !== 'object') throw new Error('WebAssembly is unavailable.');
-        const module = await createRocketModule();
-        module.FS.mkdir('/saves');
-        /* In-memory storage until the durable browser adapter is installed. */
-        module.FS.chdir('/saves');
+        let saves;
+        const module = await createRocketModule({onSave() { if (saves) saves.flush(); }});
+        saves = RocketStorage.open(module, () => window.localStorage,
+            text => { document.getElementById('storage-status').textContent = text; });
         const seed = new Uint32Array(1);
         if (window.crypto && window.crypto.getRandomValues) window.crypto.getRandomValues(seed);
         else seed[0] = Date.now() >>> 0;
         module._rocket_init(seed[0]);
+        document.getElementById('reset-saves').addEventListener('click', () => {
+            if (!window.confirm('Delete only this game’s browser saves and restart?')) return;
+            saves.reset(); module._rocket_init(seed[0]); clock.reset();
+        });
         const screen = document.getElementById('screen');
         const input = RocketPlatform.keyboard(module, screen);
         let drawn = RocketPlatform.draw(module, screen, -1);

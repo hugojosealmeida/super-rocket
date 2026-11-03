@@ -38,7 +38,7 @@ def build(emcc, out, testing=False):
         "-sFORCE_FILESYSTEM=1", "-sEXPORTED_RUNTIME_METHODS=FS,UTF8ToString,HEAPU8",
         "-sEXPORTED_FUNCTIONS=" + ",".join(exports), "-lm", "-o", str(output_js)
     ], cwd=ROOT, check=True)
-    for name in ("index.html", "client.js", "platform.js"):
+    for name in ("index.html", "client.js", "platform.js", "storage.js"):
         shutil.copyfile(ROOT / "wasm" / name, out / name)
     total = sum(p.stat().st_size for p in out.iterdir() if p.is_file())
     print(f"Static WASM package: {total:,} bytes in {out}")
