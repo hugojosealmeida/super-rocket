@@ -54,7 +54,48 @@
         screen.replaceChildren(fragment);
         return version;
     }
-    const api = { clock, runs, draw, palette };
+    function keyCode(event) {
+        const special = { ArrowLeft:37, ArrowUp:38, ArrowRight:39, ArrowDown:40,
+            ' ':32, Enter:13, Escape:27, Backspace:8 };
+        if (special[event.key]) return special[event.key];
+        if (typeof event.key === 'string' && /^[a-z123]$/i.test(event.key))
+            return event.key.toUpperCase().charCodeAt(0);
+        return 0;
+    }
+    function keyboard(module, screen, gesture = () => {}) {
+        const pressed = new Set(), beforeTick = new Set(), releaseAfterTick = new Set();
+        function clear() {
+            pressed.clear(); beforeTick.clear(); releaseAfterTick.clear();
+            module._rocket_blur();
+        }
+        screen.addEventListener('pointerdown', () => { screen.focus(); gesture(); });
+        screen.addEventListener('keydown', event => {
+            const code = keyCode(event);
+            if (!code || event.ctrlKey || event.metaKey || event.altKey) return;
+            event.preventDefault(); gesture();
+            if (!pressed.has(code) && !event.repeat) {
+                releaseAfterTick.delete(code);
+                pressed.add(code); beforeTick.add(code); module._rocket_key(code, 1);
+            }
+        });
+        screen.addEventListener('keyup', event => {
+            const code = keyCode(event);
+            if (!pressed.has(code)) return;
+            event.preventDefault(); pressed.delete(code);
+            // A tap between animation frames still reaches at least one C tick.
+            if (beforeTick.has(code)) releaseAfterTick.add(code);
+            else module._rocket_key(code, 0);
+        });
+        screen.addEventListener('blur', clear);
+        return {
+            clear,
+            afterTick() {
+                for (const code of releaseAfterTick) module._rocket_key(code, 0);
+                releaseAfterTick.clear(); beforeTick.clear();
+            }
+        };
+    }
+    const api = { clock, runs, draw, palette, keyCode, keyboard };
     if (typeof module === 'object') module.exports = api;
     else root.RocketPlatform = api;
 }(typeof window === 'object' ? window : globalThis));

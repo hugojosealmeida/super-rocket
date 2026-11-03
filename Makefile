@@ -3,6 +3,7 @@ CFLAGS  ?= -std=c99 -O2 -Wall -Wextra
 LDLIBS  ?= -lm
 LDFLAGS ?=
 EMCC    ?= emcc
+BROWSER ?= chromium
 
 BIN     := super-rocket
 SRC     := src/main.c src/app.c src/game.c src/render.c src/term.c src/rng.c src/util.c src/storage.c src/theme.c
@@ -41,6 +42,9 @@ tests/wasm_parity: tests/wasm_parity.c src/wasm_main.c src/app.c src/game.c src/
 test-wasm-build:
 	python3 tests/test_wasm_build.py
 	node tests/test_wasm_platform.cjs
+
+test-wasm: tests/wasm_parity
+	node tests/test_wasm_browser.cjs dist/wasm-test $(BROWSER)
 
 $(WEB_BIN): $(WEB_SRC) $(WEB_HDR)
 	$(CC) $(CFLAGS) -o $@ $(WEB_SRC) $(LDFLAGS) $(LDLIBS)
@@ -103,4 +107,4 @@ clean:
 run: $(BIN)
 	./$(BIN)
 
-.PHONY: all web wasm wasm-test clean run test test-web test-wasm-build test-sanitize check-version
+.PHONY: all web wasm wasm-test clean run test test-web test-wasm-build test-wasm test-sanitize check-version

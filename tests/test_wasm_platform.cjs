@@ -27,3 +27,21 @@ assert.equal(worst.length, 1840);
 assert.ok(worst.every(run => run.text.startsWith('<')));
 assert.equal(platform.runs(new Uint8Array([0]), new Uint8Array([255]), 1, 1)[0].text, ' ');
 console.log('WASM safe color-run rendering and frame bounds PASS');
+for (const [key, code] of [['w',87],['W',87],[' ',32],['Enter',13],['Escape',27],['ArrowLeft',37],['3',51]])
+  assert.equal(platform.keyCode({key}), code);
+assert.equal(platform.keyCode({key:'F5'}), 0);
+assert.equal(platform.keyCode({}), 0);
+const callbacks = {}, events = [];
+const screen = { addEventListener(type, fn) { callbacks[type] = fn; }, focus() {} };
+const moduleStub = { _rocket_key(code, down) { events.push([code, down]); }, _rocket_blur() { events.push('clear'); } };
+const keys = platform.keyboard(moduleStub, screen);
+const event = (key, extra = {}) => ({key, preventDefault() {}, ...extra});
+callbacks.keydown(event('w')); callbacks.keyup(event('w'));
+assert.deepEqual(events, [[87,1]]); // rapid tap retained until C sees it
+keys.afterTick(); assert.deepEqual(events, [[87,1],[87,0]]);
+callbacks.keydown(event('p')); callbacks.keydown(event('p', {repeat:true}));
+assert.equal(events.filter(e => e[0] === 80 && e[1] === 1).length, 1);
+callbacks.blur(); assert.equal(events.at(-1), 'clear');
+const count = events.length;
+callbacks.keydown(event('w', {ctrlKey:true})); assert.equal(events.length, count);
+console.log('WASM focus, tap retention and autorepeat input edges PASS');
