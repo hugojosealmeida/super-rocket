@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCES = ["src/wasm_main.c", "src/app.c", "src/game.c", "src/render.c", "src/keys.c",
            "src/rng.c", "src/util.c", "src/theme.c", "src/storage.c"]
 EXPORTS = ["_rocket_" + name for name in
-           ("version", "init", "tick", "key", "blur", "chars", "colors", "frame", "beep")]
+           ("version", "init", "tick", "key", "blur", "visibility", "visible", "chars", "colors", "frame", "beep")]
 
 
 def build(emcc, out, testing=False):

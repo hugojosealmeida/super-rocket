@@ -95,7 +95,11 @@
             }
         };
     }
-    const api = { clock, runs, draw, palette, keyCode, keyboard };
+    function capabilities() {
+        return { wasm: typeof WebAssembly === 'object', raf: typeof requestAnimationFrame === 'function',
+            storage: (() => { try { const key = '__rocket_test__'; localStorage.setItem(key, '1'); localStorage.removeItem(key); return true; } catch (_) { return false; } })() };
+    }
+    const api = { clock, runs, draw, palette, keyCode, keyboard, capabilities };
     if (typeof module === 'object') module.exports = api;
     else root.RocketPlatform = api;
 }(typeof window === 'object' ? window : globalThis));
