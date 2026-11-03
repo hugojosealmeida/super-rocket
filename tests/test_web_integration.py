@@ -198,8 +198,8 @@ class WebIntegration(unittest.TestCase):
         for target in re.findall(r"\]\(([^)]+)\)", readme):
             if "://" not in target and not target.startswith("#"):
                 self.assertTrue((root / target.split("#", 1)[0]).exists(), target)
-        self.assertIn("make web", readme)
-        self.assertIn("./super-rocket-web 8080", readme)
+        self.assertIn("make web", browser_guide)
+        self.assertIn("./super-rocket-web 8080", browser_guide)
         self.assertIn("make test-sanitize", browser_guide)
         self.assertIn("docs/WEB_FRONTENDS.md", readme)
 
