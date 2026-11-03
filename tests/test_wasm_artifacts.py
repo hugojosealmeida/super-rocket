@@ -6,7 +6,8 @@ import sys
 REQUIRED = {'index.html', 'client.js', 'platform.js', 'storage.js', 'rocket.js', 'rocket.wasm'}
 MAX_PACKAGE = 5 * 1024 * 1024
 root = Path(sys.argv[1] if len(sys.argv) > 1 else 'dist/wasm')
-files = {path.name: path for path in root.iterdir() if path.is_file() and path.name != 'manifest.json'}
+metadata = {'manifest.json', 'SHA256SUMS', 'SIZE.txt'}
+files = {path.name: path for path in root.iterdir() if path.is_file() and path.name not in metadata}
 missing = REQUIRED - files.keys()
 extra = set(files) - REQUIRED
 if missing or extra:

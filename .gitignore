@@ -10,5 +10,6 @@ tests/super-rocket-web-san
 .browser-tools/
 dist/wasm/
 dist/wasm-test/
+dist/wasm-package/
 tests/wasm_parity
 __pycache__/

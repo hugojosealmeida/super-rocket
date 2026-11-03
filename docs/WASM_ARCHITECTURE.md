@@ -36,6 +36,12 @@ quota before deployment. Correct `.wasm` MIME is `application/wasm`. Test nested
 paths, missing/corrupt assets and cache coherence. Actual host validation needs
 the public deployment URL/access; a local test is not external evidence.
 
+`make package-wasm` creates `dist/wasm-package/` containing only the six runtime
+files plus `manifest.json`, `SHA256SUMS` and `SIZE.txt`. The generated package
+is currently about 170 KB uncompressed (the manifest records the exact value),
+well below the 5 MB engineering ceiling and the stated hosting allowance. This
+is a measured local artifact, not a claim about remaining account quota.
+
 ## Runtime and rendering
 
 Wait for the module and storage hydration before game_init. Use a monotonic
