@@ -102,10 +102,38 @@ int http_parse_request(const char *buf, size_t len, HttpRequest *req)
         (version[7] != '0' && version[7] != '1'))
         return HTTP_BAD_REQUEST;
 
+    /* Headers are not used for routing, but malformed names/lines are refused. */
+    {
+        const char *p = line_end + 1;
+        while (p < head_end) {
+            const char *nl = memchr(p, '\n', (size_t)(head_end + end_len - p));
+            const char *colon;
+            const char *name;
+            if (nl == NULL)
+                return HTTP_BAD_REQUEST;
+            colon = memchr(p, ':', (size_t)(nl - p));
+            if (colon == NULL || colon == p)
+                return HTTP_BAD_REQUEST;
+            for (name = p; name < colon; name++) {
+                unsigned char c = (unsigned char)*name;
+                if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+                      (c >= '0' && c <= '9') || strchr("!#$%&'*+-.^_`|~", c)))
+                    return HTTP_BAD_REQUEST;
+            }
+            p = nl + 1;
+        }
+    }
+
     target_end = sp2;
     target_len = (size_t)(target_end - target);
     if (target_len == 0 || target[0] != '/')
         return HTTP_BAD_REQUEST;
+    {
+        size_t i;
+        for (i = 0; i < target_len; i++)
+            if ((unsigned char)target[i] <= 32 || (unsigned char)target[i] >= 127)
+                return HTTP_BAD_REQUEST;
+    }
 
     q = memchr(target, '?', target_len);
     if (q == NULL) {

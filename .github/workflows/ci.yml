@@ -21,6 +21,9 @@ jobs:
       - name: Web server and integration tests
         run: make test-web CC=gcc CFLAGS="-std=c99 -O2 -Wall -Wextra -Werror"
 
+      - name: Address and undefined-behavior sanitizers
+        run: make test-sanitize CC=clang
+
       - name: Version
         run: |
           ./super-rocket --version

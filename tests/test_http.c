@@ -44,6 +44,15 @@ void test_http(void)
     CHECK(parse("GET / FTP/1.0\r\n\r\n", &req) == HTTP_BAD_REQUEST);
     CHECK(parse("GET / \r\n\r\n", &req) == HTTP_BAD_REQUEST);
     CHECK(parse("get / HTTP/1.0\r\n\r\n", &req) == HTTP_BAD_REQUEST);
+    CHECK(parse("GET / HTTP/1.0\r\nBroken header\r\n\r\n", &req) == HTTP_BAD_REQUEST);
+    CHECK(parse("GET / HTTP/1.0\r\nBad name: x\r\n\r\n", &req) == HTTP_BAD_REQUEST);
+    CHECK(parse("GET / HTTP/1.0\r\n: x\r\n\r\n", &req) == HTTP_BAD_REQUEST);
+    CHECK(parse("GET / HTTP/1.0\r\nHost: local\r\nX-Test: yes\r\n\r\n", &req) == HTTP_OK);
+    CHECK(parse("GET /a\tb HTTP/1.0\r\n\r\n", &req) == HTTP_BAD_REQUEST);
+    {
+        const char nul[] = "GET /\0evil HTTP/1.0\r\n\r\n";
+        CHECK(http_parse_request(nul, sizeof(nul) - 1, &req) == HTTP_BAD_REQUEST);
+    }
 
     /* edge: a head that fills the buffer without ending */
     memset(big, 'a', sizeof(big) - 1);
@@ -83,6 +92,8 @@ void test_http(void)
     CHECK(http_url_decode("%zz", out, sizeof(out)) == -1);
     CHECK(http_url_decode("100%", out, sizeof(out)) == -1);
     CHECK(http_url_decode("%2", out, sizeof(out)) == -1);
+    CHECK(http_url_decode("%00", out, sizeof(out)) == -1);
+    CHECK(http_url_decode("%0d%0a", out, sizeof(out)) == -1);
     CHECK(http_url_decode("abcdef", out, 4) == -1);
     CHECK(http_url_decode("abc", out, 0) == -1);
 
@@ -101,4 +112,13 @@ void test_http(void)
     CHECK(http_query_get("d", "d", out, sizeof(out)) == 0);
     CHECK(http_query_get("d=%zz", "d", out, sizeof(out)) == -1);
     CHECK(http_query_get("d=12345", "d", out, 4) == -1);
+
+    /* Every truncated prefix remains safe to parse, even without a NUL terminator. */
+    {
+        const char *complete = "GET /key?d=37 HTTP/1.0\r\nHost: local\r\n\r\n";
+        size_t i;
+        for (i = 0; i < strlen(complete); i++)
+            CHECK(http_parse_request(complete, i, &req) == HTTP_INCOMPLETE);
+        CHECK(http_parse_request(complete, strlen(complete), &req) == HTTP_OK);
+    }
 }
