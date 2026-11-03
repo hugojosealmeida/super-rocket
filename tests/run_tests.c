@@ -101,6 +101,10 @@ int main(void)
     test_web_page();
     test_report("web_page", failures);
 
+    failures = test_failures;
+    test_app();
+    test_report("app", failures);
+
     /* term_init/term_shutdown touch this process' stdin, so run them last */
     failures = test_failures;
     test_term();

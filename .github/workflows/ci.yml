@@ -24,6 +24,19 @@ jobs:
       - name: Address and undefined-behavior sanitizers
         run: make test-sanitize CC=clang
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Browser control tests
+        run: |
+          npm install --prefix "$RUNNER_TEMP/rocket-browser" playwright@1.64.1
+          "$RUNNER_TEMP/rocket-browser/node_modules/.bin/playwright" install --with-deps chromium firefox webkit
+          export NODE_PATH="$RUNNER_TEMP/rocket-browser/node_modules"
+          node tests/test_web_browser.cjs ./super-rocket-web chromium
+          node tests/test_web_browser.cjs ./super-rocket-web firefox
+          node tests/test_web_browser.cjs ./super-rocket-web webkit
+
       - name: Version
         run: |
           ./super-rocket --version

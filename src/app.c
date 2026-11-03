@@ -12,6 +12,17 @@ void app_handle_input(Game *g, const TermInput *in, int *running)
         return;
     }
 
+    /* Initials may contain shortcut letters such as H, I, T and P. */
+    if (g->state == GAME_INITIALS) {
+        if (in->letter >= 'A' && in->letter <= 'Z')
+            game_initial_push(g, (char)in->letter);
+        else if (in->backspace)
+            game_initial_pop(g);
+        else if (in->enter)
+            game_commit_initials(g);
+        return;
+    }
+
     if (in->help) {
         game_toggle_help(g);
         return;
@@ -72,13 +83,7 @@ void app_handle_input(Game *g, const TermInput *in, int *running)
         break;
 
     case GAME_INITIALS:
-        if (in->letter >= 'A' && in->letter <= 'Z')
-            game_initial_push(g, (char)in->letter);
-        else if (in->backspace)
-            game_initial_pop(g);
-        else if (in->enter)
-            game_commit_initials(g);
-        break;
+        break; /* handled before shortcuts */
 
     case GAME_UPGRADE:
         if (in->digit >= 1 && in->digit <= 3)

@@ -31,5 +31,6 @@ void test_version(void);
 void test_http(void);
 void test_keys(void);
 void test_web_page(void);
+void test_app(void);
 
 #endif
