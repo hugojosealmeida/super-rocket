@@ -95,15 +95,16 @@ can be opened over any state and pause the simulation while open.
 ## Web version
 
 The web version is the same game in a 1990s-style browser page. It targets
-Netscape Navigator 2 and later (HTML 3.2, JavaScript 1.1), and it is served by
+late-1990s frame-capable browsers (historical compatibility is not yet verified), and it is served by
 the C program `super-rocket-web` (`make web`). The terminal build is unchanged.
 
 ```
 browser (HTML 3.2 page)                     super-rocket-web (C)
 -----------------------                     -----------------------------
 GET /                  ----------------->   page (src/web_page.c)
-GET /screen            ----------------->   multipart/x-mixed-replace stream,
-                                            one HTML frame per game tick
+GET /play              ----------------->   stable keyboard/textarea page
+GET /frame?v=N         ----------------->   hidden-frame snapshot update,
+                                            only changed screen content
 JS onkeydown / onkeyup
 GET /key?d=CODE        ----------------->   held-key state (src/keys.c)
 GET /key?u=CODE        ----------------->   released key
@@ -116,15 +117,20 @@ GET /key?clear=1       ----------------->   window lost focus, release all
   with POSIX sockets and no external libraries. Browsers only run HTML and a
   small JavaScript 1.1 snippet, which forwards key presses. Old browsers cannot
   read the keyboard without scripting, so this snippet is required.
-- **Screen refresh.** The screen is pushed with `multipart/x-mixed-replace`,
-  which Netscape Navigator 1.1 and later support. Each part is a complete HTML
-  page holding the frame in a monospace `<textarea>`. This keeps one connection
-  open for the whole game, and the browser does not reload the page. Internet
-  Explorer 3 does not support server push, so it shows the first frame only.
+- **Screen refresh.** A hidden frame polls every 100 ms and copies changed
+  text into the visible page's textarea. Physics still runs at 30 ticks per
+  second. This replaces the initial server-push proposal: reloading the keyboard
+  document would discard held-key state and focus. No fetch, XHR, canvas or
+  WebAssembly is used. Frames are a period browser extension, not HTML 3.2
+  proper. We do not claim strict HTML 3.2 validation for the frameset wrapper.
 - **Keyboard.** Key presses are sent as image requests (`new Image().src`), so
-  the page never navigates away from the game. The server answers `204 No
-  Content`. Arrows and WASD hold thrust and fire until the key is released.
+  the page never navigates away from the game. The server answers with a tiny
+  GIF. Image requests are retained and serialized so key-up cannot overtake
+  key-down. A per-server random token prevents drive-by cross-site control.
+  Arrows and WASD hold thrust and fire until the key is released.
   One-shot keys (pause, theme, help and so on) are queued once.
+  Held keys are renewed every 500 ms; a two-second lease releases them after
+  a lost connection. Window blur also releases held keys.
 - **One game per server.** The server runs one shared game. Every connected
   browser sees the same screen, and key presses from any browser control it.
   Scores, statistics and settings use the same files as the terminal version

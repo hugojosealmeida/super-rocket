@@ -6,6 +6,11 @@ LDFLAGS ?=
 BIN     := super-rocket
 SRC     := src/main.c src/app.c src/game.c src/render.c src/term.c src/rng.c src/util.c src/storage.c src/theme.c
 HDR     := src/app.h src/game.h src/render.h src/term.h src/rng.h src/util.h src/storage.h src/theme.h
+WEB_BIN := super-rocket-web
+WEB_SRC := src/web_main.c src/web_server.c src/web_term.c src/app.c src/game.c src/render.c src/rng.c src/util.c src/storage.c src/theme.c src/http.c src/keys.c src/web_page.c
+WEB_HDR := $(HDR) src/http.h src/keys.h src/web_page.h src/web_term.h src/web_server.h
+WEB_TEST_BIN := tests/run_web_tests
+WEB_TEST_SRC := tests/run_web_tests.c src/web_server.c src/web_term.c src/http.c src/keys.c src/web_page.c src/theme.c
 
 TEST_BIN := tests/run_tests
 TEST_SRC := tests/run_tests.c tests/test_util.c tests/test_rng.c \
@@ -20,10 +25,22 @@ CHANGELOG := CHANGELOG.md
 
 all: $(BIN)
 
+web: $(WEB_BIN)
+
+$(WEB_BIN): $(WEB_SRC) $(WEB_HDR)
+	$(CC) $(CFLAGS) -o $@ $(WEB_SRC) $(LDFLAGS) $(LDLIBS)
+
+$(WEB_TEST_BIN): $(WEB_TEST_SRC) $(WEB_HDR)
+	$(CC) $(CFLAGS) -Isrc -o $@ $(WEB_TEST_SRC) $(LDFLAGS) $(LDLIBS)
+
+test-web: $(WEB_TEST_BIN) $(WEB_BIN)
+	./$(WEB_TEST_BIN)
+	python3 tests/test_web_integration.py ./$(WEB_BIN)
+
 $(BIN): $(SRC) $(HDR)
 	$(CC) $(CFLAGS) -o $@ $(SRC) $(LDFLAGS) $(LDLIBS)
 
-$(TEST_BIN): $(TEST_SRC) tests/test.h $(HDR)
+$(TEST_BIN): $(TEST_SRC) tests/test.h $(WEB_HDR)
 	$(CC) $(CFLAGS) -Isrc -o $@ $(TEST_SRC) $(LDFLAGS) $(LDLIBS)
 
 test: $(TEST_BIN)
@@ -48,10 +65,10 @@ check-version: $(BIN)
 	echo "check-version: super-rocket $$printed matches $(CHANGELOG)"
 
 clean:
-	rm -f $(BIN) $(TEST_BIN)
+	rm -f $(BIN) $(TEST_BIN) $(WEB_BIN) $(WEB_TEST_BIN)
 	rm -rf tests/run_tests.dSYM
 
 run: $(BIN)
 	./$(BIN)
 
-.PHONY: all clean run test check-version
+.PHONY: all web clean run test test-web check-version
