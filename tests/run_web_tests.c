@@ -1,6 +1,8 @@
 #define _POSIX_C_SOURCE 200809L
 #include <stdio.h>
 #include <fcntl.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -40,6 +42,12 @@ int main(void)
     fd = web_server_listen("127.0.0.1", 0);
     CHECK(fd >= 0);
     CHECK(fcntl(STDIN_FILENO, F_GETFL) == stdin_flags);
+    if (fd >= 0) {
+        struct sockaddr_in bound;
+        socklen_t len = sizeof(bound);
+        CHECK(getsockname(fd, (struct sockaddr *)&bound, &len) == 0);
+        CHECK(ntohl(bound.sin_addr.s_addr) == 0x7f000001UL);
+    }
     CHECK(request("/", out, sizeof(out)) > 0);
     CHECK(strstr(out, "200 OK") != NULL);
     CHECK(strstr(out, "NAME=\"transport\"") != NULL);
@@ -58,6 +66,10 @@ int main(void)
     CHECK(strstr(out, "image/gif") != NULL);
     term_read_input(&in);
     CHECK(in.up == 1);
+    term_sleep(2.1);
+    web_server_service(fd, 0.0);
+    term_read_input(&in);
+    CHECK(in.up == 0); /* missed key-up / lost browser expires its lease */
     snprintf(url, sizeof(url), "/key?t=%s&u=38", token);
     CHECK(request(url, out, sizeof(out)) > 0);
     term_read_input(&in);

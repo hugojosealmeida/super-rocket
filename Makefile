@@ -11,6 +11,7 @@ WEB_SRC := src/web_main.c src/web_server.c src/web_term.c src/app.c src/game.c s
 WEB_HDR := $(HDR) src/http.h src/keys.h src/web_page.h src/web_term.h src/web_server.h
 WEB_TEST_BIN := tests/run_web_tests
 WEB_TEST_SRC := tests/run_web_tests.c src/web_server.c src/web_term.c src/http.c src/keys.c src/web_page.c src/theme.c
+SANFLAGS := -std=c99 -O1 -g -Wall -Wextra -Werror -fsanitize=address,undefined -fno-omit-frame-pointer
 
 TEST_BIN := tests/run_tests
 TEST_SRC := tests/run_tests.c tests/test_util.c tests/test_rng.c \
@@ -36,6 +37,20 @@ $(WEB_TEST_BIN): $(WEB_TEST_SRC) $(WEB_HDR)
 test-web: $(WEB_TEST_BIN) $(WEB_BIN)
 	./$(WEB_TEST_BIN)
 	python3 tests/test_web_integration.py ./$(WEB_BIN)
+
+tests/run_tests_san: $(TEST_SRC) tests/test.h $(WEB_HDR)
+	$(CC) $(SANFLAGS) -Isrc -o $@ $(TEST_SRC) $(LDLIBS)
+
+tests/run_web_tests_san: $(WEB_TEST_SRC) tests/test.h $(WEB_HDR)
+	$(CC) $(SANFLAGS) -Isrc -o $@ $(WEB_TEST_SRC) $(LDLIBS)
+
+tests/super-rocket-web-san: $(WEB_SRC) $(WEB_HDR)
+	$(CC) $(SANFLAGS) -o $@ $(WEB_SRC) $(LDLIBS)
+
+test-sanitize: tests/run_tests_san tests/run_web_tests_san tests/super-rocket-web-san
+	./tests/run_tests_san
+	./tests/run_web_tests_san
+	python3 tests/test_web_integration.py ./tests/super-rocket-web-san
 
 $(BIN): $(SRC) $(HDR)
 	$(CC) $(CFLAGS) -o $@ $(SRC) $(LDFLAGS) $(LDLIBS)
@@ -66,9 +81,10 @@ check-version: $(BIN)
 
 clean:
 	rm -f $(BIN) $(TEST_BIN) $(WEB_BIN) $(WEB_TEST_BIN)
+	rm -f tests/run_tests_san tests/run_web_tests_san tests/super-rocket-web-san
 	rm -rf tests/run_tests.dSYM
 
 run: $(BIN)
 	./$(BIN)
 
-.PHONY: all web clean run test test-web check-version
+.PHONY: all web clean run test test-web test-sanitize check-version
