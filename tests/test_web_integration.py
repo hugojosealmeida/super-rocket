@@ -95,7 +95,9 @@ class WebIntegration(unittest.TestCase):
         self.assertIn(b'/frame', page)
         page = self.get("/play")
         self.assertIn(b"SUPER ROCKET", page)
-        self.assertIn(b"COLS=80 ROWS=23", page)
+        self.assertIn(b'ID="screen"', page)
+        self.assertIn(b'TABLE BGCOLOR="#000000"', page)
+        self.assertIn(b'BODY BGCOLOR="#FFFFFF"', page)
         header, body = page.split(b"\r\n\r\n", 1)
         self.assertEqual(int(re.search(rb"Content-Length: (\d+)", header).group(1)), len(body))
 
@@ -107,7 +109,7 @@ class WebIntegration(unittest.TestCase):
             self.assertTrue(parsed.tags <= {
                 "html", "head", "title", "body", "frameset", "frame", "noframes",
                 "script", "center", "h1", "p", "form", "input", "textarea", "table",
-                "caption", "tr", "th", "td"})
+                "caption", "tr", "th", "td", "pre", "font", "span"})
             self.assertNotIn("style", parsed.attributes)
             self.assertNotIn("class", parsed.attributes)
             for modern in ("fetch(", "XMLHttpRequest", "WebSocket", "WebAssembly", "<CANVAS", "=>"):
@@ -156,7 +158,7 @@ class WebIntegration(unittest.TestCase):
                 self.assertIn(b"400 Bad Request", self.get("/key?t=" + self.token + "&" + action))
         time.sleep(0.1)
         frame = self.get("/frame")
-        self.assertIn(b"screen.value", frame)
+        self.assertIn(b"gameScreen().innerHTML", frame)
         self.assertIn(b"setTimeout", frame)
         self.assertNotIn(b"WebAssembly", frame)
 

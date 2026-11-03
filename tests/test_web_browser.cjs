@@ -42,12 +42,27 @@ async function main() {
     }
     const frame = page.frame({ name: 'play' });
     assert.ok(frame, 'play frame attached');
-    const screen = frame.locator('textarea');
+    const screen = frame.locator('#screen');
     const waitText = text => page.waitForFunction(
-      text => frames[0].document.forms[0].screen.value.includes(text), text);
+      text => frames[0].document.getElementById('screen').textContent.includes(text), text);
     const waitNoText = text => page.waitForFunction(
-      text => !frames[0].document.forms[0].screen.value.includes(text), text);
+      text => !frames[0].document.getElementById('screen').textContent.includes(text), text);
     await waitText('lift off');
+    assert.equal(await frame.evaluate(() => getComputedStyle(document.body).backgroundColor), 'rgb(255, 255, 255)');
+    assert.equal(await frame.locator('table').first().evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(0, 0, 0)');
+    assert.match(await screen.evaluate(el => getComputedStyle(el).fontFamily), /Courier/);
+    const grid = (await screen.textContent()).split('\n');
+    assert.equal(grid.length, 23);
+    assert.ok(grid.every(row => row.length === 80), 'exactly 80 columns without reflow');
+    const originalSize = await frame.locator('table').first().boundingBox();
+    const initialColors = await screen.locator('font').evaluateAll(fonts => [...new Set(fonts.map(font => font.color))]);
+    assert.ok(initialColors.length > 1, 'per-character terminal colors are present');
+    assert.ok(initialColors.includes('#55FFFF'), 'classic cyan preserved');
+    // Query and inspect atomically: each snapshot replaces the FONT elements.
+    await frame.waitForFunction(() => {
+      const font = document.querySelector('#screen font[color="#55FFFF"]');
+      return font && getComputedStyle(font).color === 'rgb(85, 255, 255)';
+    });
     await screen.click();
     await page.keyboard.press('3');
     await waitText('> [3]');
@@ -63,6 +78,13 @@ async function main() {
     await waitNoText('T O P   P I L O T S');
     await page.keyboard.press('t');
     await waitText('theme:amber');
+    const amberColors = await screen.locator('font').evaluateAll(fonts => [...new Set(fonts.map(font => font.color))]);
+    assert.ok(amberColors.includes('#FFFF55'), 'amber palette preserved');
+    assert.notDeepEqual(amberColors, initialColors);
+    const themedSize = await frame.locator('table').first().boundingBox();
+    assert.ok(Math.abs(themedSize.width - originalSize.width) < 1);
+    assert.ok(Math.abs(themedSize.height - originalSize.height) < 1);
+    assert.equal(await frame.evaluate(() => getComputedStyle(document.body).backgroundColor), 'rgb(255, 255, 255)');
     await page.keyboard.press('f');
     await waitText('fps:on');
     await page.keyboard.press('m');
@@ -75,7 +97,7 @@ async function main() {
     await waitText('PAUSED');
     await page.keyboard.down('p'); // autorepeat must not resume
     await page.waitForTimeout(200);
-    assert.ok((await screen.inputValue()).includes('PAUSED'));
+    assert.ok((await screen.textContent()).includes('PAUSED'));
     await page.keyboard.up('p');
     await page.keyboard.press('p');
     await waitNoText('PAUSED');
@@ -103,6 +125,10 @@ async function main() {
     const reloaded = page.frame({ name: 'play' });
     await page.setViewportSize({ width: 500, height: 800 });
     await reloaded.waitForFunction(() => document.forms[0].connection.value.includes('too narrow'));
+    const narrowSize = await reloaded.locator('table').first().boundingBox();
+    assert.ok(Math.abs(narrowSize.width - originalSize.width) < 1,
+      'narrow viewports do not reflow the terminal grid (allow subpixel rounding)');
+    assert.ok(Math.abs(narrowSize.height - originalSize.height) < 1);
     await page.setViewportSize({ width: 1000, height: 800 });
     await reloaded.waitForFunction(() => document.forms[0].connection.value.includes('Connected'));
     // Stop transport updates without stopping the server: stale-screen warning is visible.
@@ -111,7 +137,7 @@ async function main() {
     const disabled = await browser.newContext({ javaScriptEnabled: false });
     const fallback = await disabled.newPage();
     await fallback.goto('http://127.0.0.1:' + port);
-    assert.ok((await fallback.frame({ name: 'play' }).locator('textarea').inputValue()).includes('JavaScript'));
+    assert.ok((await fallback.frame({ name: 'play' }).locator('#screen').textContent()).includes('JavaScript'));
     await disabled.close();
     assert.deepEqual(errors, [], 'no browser JavaScript errors');
     console.log(engine + ': launch, controls, held keys, autorepeat, blur, scroll and reload PASS');

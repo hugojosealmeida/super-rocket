@@ -14,6 +14,9 @@ All notable changes to super-rocket are documented here.
 - Web unit/socket/browser regressions, ES3 syntax checks and ASan/UBSan CI.
 
 ### Changed
+- Browser play now uses a white page with a black, fixed 80×23 monospace game
+  panel. Per-character terminal colors and all three themes are preserved using
+  the C renderer's color buffer and legacy PRE/FONT markup instead of a textarea.
 - `GAME_VERSION` is now `1.0.0`, matching the released `1.0.0 - 2022-03-31`
   section below; `--version` and the menu footer had kept printing `0.9.0`
   after that release was documented.  `make check-version` (and the CI
