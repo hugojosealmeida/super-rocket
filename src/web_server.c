@@ -91,7 +91,7 @@ int web_respond(const char *head, size_t len, char *out, size_t size, int *strea
     if (!http_path_is_safe(req.path))
         return status_reply(out, size, "404 Not Found");
 
-    if (strcmp(req.path, "/") == 0) {
+    if (strcmp(req.path, "/") == 0 || strcmp(req.path, "/index.html") == 0) {
         n = web_index_document(page, sizeof(page));
     } else if (strcmp(req.path, "/play") == 0) {
         n = web_play_document(page, sizeof(page), control_token);

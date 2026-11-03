@@ -123,6 +123,9 @@ GET /key?clear=1       ----------------->   window lost focus, release all
   document would discard held-key state and focus. No fetch, XHR, canvas or
   WebAssembly is used. Frames are a period browser extension, not HTML 3.2
   proper. We do not claim strict HTML 3.2 validation for the frameset wrapper.
+  The live page is embedded in the C binary, avoiding runtime asset paths and
+  arbitrary file serving. `web/index.html` is a standalone HTML 3.2 launch guide,
+  not a client-only game. The server works from any working directory.
   Textareas have one browser-controlled text color; per-cell terminal colors
   cannot be reproduced without CSS or a richer renderer. Theme selection is
   preserved in the C game and updates the surrounding page text. Native play

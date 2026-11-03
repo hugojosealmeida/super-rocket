@@ -9,8 +9,20 @@ import sys
 import tempfile
 import time
 import unittest
+from html.parser import HTMLParser
 
 BINARY = str(Path(sys.argv.pop(1)).resolve())
+
+
+class RetroMarkup(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.tags = set()
+        self.attributes = set()
+
+    def handle_starttag(self, tag, attrs):
+        self.tags.add(tag)
+        self.attributes.update(key for key, _ in attrs)
 
 
 class WebIntegration(unittest.TestCase):
@@ -27,6 +39,7 @@ class WebIntegration(unittest.TestCase):
         cls.process = subprocess.Popen(
             [BINARY, str(cls.port)],
             env=dict(os.environ, HOME=cls.home.name),
+            cwd=cls.home.name,  # executable must not depend on source-tree assets
             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         deadline = time.monotonic() + 5
         while time.monotonic() < deadline:
@@ -85,6 +98,24 @@ class WebIntegration(unittest.TestCase):
         self.assertIn(b"COLS=80 ROWS=23", page)
         header, body = page.split(b"\r\n\r\n", 1)
         self.assertEqual(int(re.search(rb"Content-Length: (\d+)", header).group(1)), len(body))
+
+    def test_retro_page_markup_and_launch_guide(self):
+        for target in ("/", "/play", "/frame"):
+            body = self.get(target).split(b"\r\n\r\n", 1)[1].decode("ascii")
+            parsed = RetroMarkup()
+            parsed.feed(body)
+            self.assertTrue(parsed.tags <= {
+                "html", "head", "title", "body", "frameset", "frame", "noframes",
+                "script", "center", "h1", "p", "form", "input", "textarea", "table",
+                "caption", "tr", "th", "td"})
+            self.assertNotIn("style", parsed.attributes)
+            self.assertNotIn("class", parsed.attributes)
+            for modern in ("fetch(", "XMLHttpRequest", "WebSocket", "WebAssembly", "<CANVAS", "=>"):
+                self.assertNotIn(modern, body)
+        guide = Path(__file__).resolve().parents[1] / "web" / "index.html"
+        self.assertIn("HTML 3.2 Final", guide.read_text())
+        self.assertIn("./super-rocket-web", guide.read_text())
+        self.assertIn(b"200 OK", self.get("/index.html"))
 
     def test_bad_routes_and_methods(self):
         for target in ("/absent", "/../etc/passwd", "/%2e%2e/etc/passwd", "/a\\b"):

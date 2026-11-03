@@ -90,6 +90,19 @@ async function main() {
     await waitText('lift off');
     await page.reload();
     await waitText('theme:amber');
+    const reloaded = page.frame({ name: 'play' });
+    await page.setViewportSize({ width: 500, height: 800 });
+    await reloaded.waitForFunction(() => document.forms[0].connection.value.includes('too narrow'));
+    await page.setViewportSize({ width: 1000, height: 800 });
+    await reloaded.waitForFunction(() => document.forms[0].connection.value.includes('Connected'));
+    // Stop transport updates without stopping the server: stale-screen warning is visible.
+    await page.route('**/frame?*', route => route.abort());
+    await reloaded.waitForFunction(() => document.forms[0].connection.value.includes('No recent frames'));
+    const disabled = await browser.newContext({ javaScriptEnabled: false });
+    const fallback = await disabled.newPage();
+    await fallback.goto('http://127.0.0.1:' + port);
+    assert.ok((await fallback.frame({ name: 'play' }).locator('textarea').inputValue()).includes('JavaScript'));
+    await disabled.close();
     assert.deepEqual(errors, [], 'no browser JavaScript errors');
     console.log(engine + ': launch, controls, held keys, autorepeat, blur, scroll and reload PASS');
   } finally {

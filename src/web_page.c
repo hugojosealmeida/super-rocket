@@ -46,6 +46,7 @@ static const char key_script[] =
     "  return 0;\n"
     "}\n"
     "var held = new Array(), queue = new Array(), busy = false, image = null;\n"
+    "var lastFrame = (new Date()).getTime();\n"
     "function pump() {\n"
     "  if (busy || queue.length == 0) return;\n"
     "  busy = true; image = new Image();\n"
@@ -85,6 +86,14 @@ static const char key_script[] =
     "if (document.captureEvents && window.Event) document.captureEvents(Event.KEYDOWN | Event.KEYUP);\n"
     "function heartbeat() {\n"
     "  var i; for (i = 0; i < 256; i++) if (held[i]) keySend(\"d\", i);\n"
+    "  var width = window.innerWidth || (document.body ? document.body.clientWidth : 0);\n"
+    "  if (document.forms[0]) {\n"
+    "    if ((new Date()).getTime() - lastFrame > 3000)\n"
+    "      document.forms[0].connection.value = 'No recent frames. Check the C server, then reload this page.';\n"
+    "    else if (width && width < 700)\n"
+    "      document.forms[0].connection.value = 'Window too narrow: widen it or scroll to see all 80 columns.';\n"
+    "    else document.forms[0].connection.value = 'Connected. Click the screen and press Enter to launch.';\n"
+    "  }\n"
     "  setTimeout(\"heartbeat()\", 500);\n"
     "}\n"
     "setTimeout(\"heartbeat()\", 500);\n"
@@ -176,7 +185,7 @@ int web_frame_document(char *out, size_t size, const char *chars, int width, int
     if (snprintf(head, sizeof(head),
                  "<HTML>\n<HEAD>\n<TITLE>super-rocket</TITLE>\n</HEAD>\n"
                  "<BODY BGCOLOR=\"#000000\" TEXT=\"%s\">\n"
-                 "<FORM>\n<TEXTAREA NAME=\"screen\" COLS=%d ROWS=%d WRAP=OFF "
+                 "<FORM ACTION=\"/play\">\n<TEXTAREA NAME=\"screen\" COLS=%d ROWS=%d WRAP=OFF "
                  "onfocus=\"this.blur()\">",
                  web_html_color(text_color), width, height) >= (int)sizeof(head))
         return -1;
@@ -222,7 +231,9 @@ int web_play_document(char *out, size_t size, const char *token)
     put(&w, "</HEAD><BODY BGCOLOR=\"#000000\" TEXT=\"#55FFFF\">"
         "<CENTER><H1>SUPER ROCKET</H1><P>EARTH -&gt; MARS</P>"
         "<P>Click this page, then press Enter to launch. JavaScript must be enabled.</P>"
-        "<FORM ACTION=\"/play\"><TEXTAREA NAME=\"screen\" COLS=80 ROWS=23 "
+        "<FORM ACTION=\"/play\"><P><INPUT TYPE=TEXT NAME=\"connection\" SIZE=74 "
+        "VALUE=\"Waiting for frames. Enable JavaScript; keep the C server running.\"></P>"
+        "<TEXTAREA NAME=\"screen\" COLS=80 ROWS=23 "
         "onkeydown=\"return keyDown(event)\" onkeyup=\"return keyUp(event)\">"
         "Connecting to the C game server... If this stays visible, frames or JavaScript may be disabled."
         "</TEXTAREA></FORM>"
@@ -255,6 +266,7 @@ int web_update_document(char *out, size_t size, const char *chars, int width,
         "function update() {\n"
         "  var p = parent.frames[0];\n"
         "  if (!p || !p.document.forms[0]) { location.replace('/frame'); return; }\n");
+    put(&w, "  p.lastFrame = (new Date()).getTime();\n");
     if (changed) {
         put(&w, "  p.document.forms[0].screen.value = \"");
         for (y = 0; y < height; y++) {
