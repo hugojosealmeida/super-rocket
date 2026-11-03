@@ -23,6 +23,37 @@ scripts; the game remains C. Chromium, Firefox and WebKit are verified by CI.
 Historical Netscape/IE releases are unverified, not promised as supported.
 See [browser compatibility and the test checklist](docs/BROWSER_COMPATIBILITY.md).
 
+## Play the browser-local WebAssembly version
+
+There is also a third frontend for static hosting. The visitor's browser runs
+the compiled C game locally, so every page has its own rocket and key presses do
+not go to a server. The terminal and C-server versions remain available.
+
+```sh
+make wasm EMCC="docker run --rm -v $PWD:/src -w /src emscripten/emsdk:4.0.21 emcc"
+make package-wasm
+python3 -m http.server 8000 --directory dist/wasm-package
+```
+
+Open `http://127.0.0.1:8000/`, using HTTP(S) rather than `file://`. The package
+is currently about 169 KB uncompressed and contains the generated WebAssembly,
+loader, page, browser bridge, checksum and size files. Upload only the contents
+of `dist/wasm-package/`.
+
+The WebAssembly page keeps the retro appearance: a white page, black fixed
+80x23 monospace game panel, C-rendered character colors and all themes. It
+requires JavaScript and WebAssembly, so it is not for historical browsers.
+Scores, settings, statistics and the local leaderboard are stored in that
+browser origin. A nickname is only a local label; there are no accounts,
+trusted global scores, shared spectators or cross-device saves. Storage errors
+fall back to a session-only game with a visible warning.
+
+See [the static deployment guide](docs/WASM_DEPLOYMENT.md) and [the WebAssembly
+architecture](docs/WASM_ARCHITECTURE.md) for artifact checks, cache/MIME
+requirements, browser limitations and test commands. External hosting
+verification requires the actual public URL; the repository verifies a local
+static server only.
+
 The terminal must be at least 40 columns by 12 rows. Smaller windows are
 refused with `terminal too small` on stderr before the game touches the
 terminal, instead of drawing a frame that wraps into unreadable output. This
