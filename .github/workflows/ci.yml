@@ -26,7 +26,7 @@ jobs:
             npm install --prefix /tmp/rocket-browser playwright@1.64.1
             export NODE_PATH=/tmp/rocket-browser/node_modules
             for browser in chromium firefox webkit; do
-              make test-wasm BROWSER="$browser"
+              node tests/test_wasm_browser.cjs dist/wasm-test "$browser"
               node tests/test_wasm_browser.cjs dist/wasm "$browser"
             done
           '
