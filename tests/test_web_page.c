@@ -38,10 +38,15 @@ void test_web_page(void)
     CHECK(web_frame_document(out, sizeof(out), "A", 0, 1, 97) == -1);
     CHECK(web_frame_document(out, sizeof(out), "A", 1, 0, 97) == -1);
     CHECK(web_frame_document(out, sizeof(out), "A", -3, 1, 97) == -1);
+    CHECK(web_frame_document(out, sizeof(out), "A", 2147483647, 2147483647, 97) == -1);
     CHECK(web_frame_document(out, 0, "A", 1, 1, 97) == -1);
 
     /* edge: output buffer too small is refused, not truncated */
     CHECK(web_frame_document(small, sizeof(small), "ABCDEFGH", 8, 1, 97) == -1);
+    n = web_frame_document(out, sizeof(out), "A", 1, 1, 97);
+    CHECK(n > 0);
+    CHECK(web_frame_document(out, (size_t)n + 1, "A", 1, 1, 97) == n);
+    CHECK(web_frame_document(out, (size_t)n, "A", 1, 1, 97) == -1);
 
     /* edge: a full game-sized frame fits in the server's buffer */
     {

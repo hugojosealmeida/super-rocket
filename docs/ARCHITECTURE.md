@@ -123,6 +123,10 @@ GET /key?clear=1       ----------------->   window lost focus, release all
   document would discard held-key state and focus. No fetch, XHR, canvas or
   WebAssembly is used. Frames are a period browser extension, not HTML 3.2
   proper. We do not claim strict HTML 3.2 validation for the frameset wrapper.
+  Textareas have one browser-controlled text color; per-cell terminal colors
+  cannot be reproduced without CSS or a richer renderer. Theme selection is
+  preserved in the C game and updates the surrounding page text. Native play
+  retains all per-cell colors.
 - **Keyboard.** Key presses are sent as image requests (`new Image().src`), so
   the page never navigates away from the game. The server answers with a tiny
   GIF. Image requests are retained and serialized so key-up cannot overtake
