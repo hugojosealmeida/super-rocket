@@ -30,12 +30,12 @@ def build(emcc, out, testing=False):
     output_js = out / "rocket.js"
     if output_js.is_relative_to(ROOT):
         output_js = output_js.relative_to(ROOT)
-    exports = EXPORTS + (["_rocket_snapshot"] if testing else [])
+    exports = EXPORTS + (["_rocket_snapshot", "_rocket_test_state"] if testing else [])
     subprocess.run(compiler + SOURCES + (["-DROCKET_TEST"] if testing else []) + [
         "-std=c99", "-O2", "-Wall", "-Wextra", "-Werror", "--no-entry",
         "-sMODULARIZE=1", "-sEXPORT_NAME=createRocketModule", "-sENVIRONMENT=web",
         "-sALLOW_MEMORY_GROWTH=0", "-sINITIAL_MEMORY=16777216", "-sSTACK_SIZE=1048576",
-        "-sFORCE_FILESYSTEM=1", "-sEXPORTED_RUNTIME_METHODS=FS,UTF8ToString",
+        "-sFORCE_FILESYSTEM=1", "-sEXPORTED_RUNTIME_METHODS=FS,UTF8ToString,HEAPU8",
         "-sEXPORTED_FUNCTIONS=" + ",".join(exports), "-lm", "-o", str(output_js)
     ], cwd=ROOT, check=True)
     for name in ("index.html", "client.js", "platform.js"):
