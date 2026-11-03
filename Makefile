@@ -2,6 +2,7 @@ CC      ?= cc
 CFLAGS  ?= -std=c99 -O2 -Wall -Wextra
 LDLIBS  ?= -lm
 LDFLAGS ?=
+EMCC    ?= emcc
 
 BIN     := super-rocket
 SRC     := src/main.c src/app.c src/game.c src/render.c src/term.c src/rng.c src/util.c src/storage.c src/theme.c
@@ -27,6 +28,12 @@ CHANGELOG := CHANGELOG.md
 all: $(BIN)
 
 web: $(WEB_BIN)
+
+wasm:
+	python3 tools/build_wasm.py --emcc "$(EMCC)"
+
+test-wasm-build:
+	python3 tests/test_wasm_build.py
 
 $(WEB_BIN): $(WEB_SRC) $(WEB_HDR)
 	$(CC) $(CFLAGS) -o $@ $(WEB_SRC) $(LDFLAGS) $(LDLIBS)
@@ -83,8 +90,9 @@ clean:
 	rm -f $(BIN) $(TEST_BIN) $(WEB_BIN) $(WEB_TEST_BIN)
 	rm -f tests/run_tests_san tests/run_web_tests_san tests/super-rocket-web-san
 	rm -rf tests/run_tests.dSYM
+	rm -f dist/wasm/rocket.js dist/wasm/rocket.wasm dist/wasm/index.html dist/wasm/client.js
 
 run: $(BIN)
 	./$(BIN)
 
-.PHONY: all web clean run test test-web test-sanitize check-version
+.PHONY: all web wasm clean run test test-web test-wasm-build test-sanitize check-version
