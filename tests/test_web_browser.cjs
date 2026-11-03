@@ -6,6 +6,7 @@ const net = require('node:net');
 const os = require('node:os');
 const path = require('node:path');
 const engines = require('playwright');
+const acorn = require('acorn');
 
 async function main() {
   const binary = path.resolve(process.argv[2] || './super-rocket-web');
@@ -27,9 +28,18 @@ async function main() {
       server.once('exit', code => { clearTimeout(timeout); reject(new Error('server exit ' + code)); });
     });
     browser = await engines[engine].launch();
+    console.log(engine + ' version: ' + browser.version());
     const page = await browser.newPage();
     page.on('pageerror', e => errors.push(e.message));
     await page.goto('http://127.0.0.1:' + port);
+    // Parse the actual shipped scripts, not the modern development test harness.
+    for (const endpoint of ['/play', '/frame']) {
+      const response = await page.request.get('http://127.0.0.1:' + port + endpoint);
+      const body = await response.text();
+      const scripts = [...body.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)];
+      assert.ok(scripts.length > 0, endpoint + ' contains scripts');
+      for (const match of scripts) acorn.parse(match[1], { ecmaVersion: 3 });
+    }
     const frame = page.frame({ name: 'play' });
     assert.ok(frame, 'play frame attached');
     const screen = frame.locator('textarea');
