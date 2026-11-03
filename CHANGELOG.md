@@ -4,6 +4,8 @@ All notable changes to super-rocket are documented here.
 
 ## Unreleased
 
+## 1.1.0 - 2026-11-03
+
 ### Added
 - Optional C web frontend (`make web`, `./super-rocket-web 8080`) serving a
   1990s-style HTML page with keyboard play. The terminal build remains available.
@@ -17,9 +19,21 @@ All notable changes to super-rocket are documented here.
 - Browser play now uses a white page with a black, fixed 80×23 monospace game
   panel. Per-character terminal colors and all three themes are preserved using
   the C renderer's color buffer and legacy PRE/FONT markup instead of a textarea.
-- `GAME_VERSION` is now `1.0.0`, matching the released `1.0.0 - 2022-03-31`
-  section below; `--version` and the menu footer had kept printing `0.9.0`
-  after that release was documented.  `make check-version` (and the CI
+
+### Fixed
+- Leaderboard initials can contain shortcut letters such as H, I, T and P
+  without opening overlays or triggering other game actions.
+
+## 1.0.0 - 2022-03-31
+
+### Maintenance included in the v1.0.0 tag
+
+These changes were already present in the tagged v1.0.0 baseline; they are not
+new in v1.1.0.
+
+- Corrected `GAME_VERSION` to `1.0.0` for that release; `--version` and the menu
+  footer had kept printing `0.9.0` after the release was documented.
+  `make check-version` (and the CI
   `Version` step) asserts the printed version equals the newest
   `## <version>` heading in this changelog so the two cannot drift again,
   and the unit suite (`make test`) carries the same assertion.
@@ -49,8 +63,6 @@ All notable changes to super-rocket are documented here.
   after the game, `cat` and every other blocking read in that tab failed with
   `EAGAIN` until the tab was reopened.  The original flags are now saved and
   put back on shutdown.
-
-## 1.0.0 - 2022-03-31
 
 ### Added
 - Campaign of three sectors with an upgrade choice between them.

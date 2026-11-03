@@ -185,7 +185,7 @@ class WebIntegration(unittest.TestCase):
                 self.assertNotEqual(result.returncode, 0)
         result = subprocess.run([BINARY, "--version"], capture_output=True, timeout=3)
         self.assertEqual(result.returncode, 0)
-        self.assertIn(b"1.0.0", result.stdout)
+        self.assertIn(b"1.1.0", result.stdout)
 
     def test_documented_cli_and_readme_links(self):
         root = Path(__file__).resolve().parents[1]
