@@ -51,6 +51,7 @@ test-wasm-artifacts:
 	python3 tests/test_wasm_artifacts.py dist/wasm
 	python3 tests/test_wasm_package.py
 	python3 tests/test_wasm_static.py
+	python3 tests/test_wasm_docs.py
 
 test-wasm: tests/wasm_parity
 	node tests/test_wasm_browser.cjs dist/wasm-test $(BROWSER)

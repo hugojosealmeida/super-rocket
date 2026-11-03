@@ -7,6 +7,9 @@ All notable changes to super-rocket are documented here.
 ## 1.1.0 - 2026-11-03
 
 ### Added
+- Optional independent static WebAssembly frontend built from the shared C
+  game, with local browser saves, direct keyboard input, colored retro panel,
+  failure diagnostics, artifact manifests and static deployment tests.
 - Optional C web frontend (`make web`, `./super-rocket-web 8080`) serving a
   1990s-style HTML page with keyboard play. The terminal build remains available.
   Both frontends share the C game logic; browser scripts only handle transport
