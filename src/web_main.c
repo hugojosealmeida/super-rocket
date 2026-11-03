@@ -5,10 +5,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 
 #include "app.h"
 #include "game.h"
 #include "rng.h"
+#include "storage.h"
 #include "term.h"
 #include "web_server.h"
 #include "web_term.h"
@@ -25,6 +27,8 @@ static void stop_server(int sig)
 int main(int argc, char **argv)
 {
     const char *bind_addr = "127.0.0.1";
+    const char *data_dir = NULL;
+    char default_dir[900];
     int port = 8080;
     int have_port = 0;
     int fd;
@@ -34,7 +38,7 @@ int main(int argc, char **argv)
 
     for (i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--help") == 0) {
-            printf("usage: %s [PORT] [--bind IPv4]\n", argv[0]);
+            printf("usage: %s [PORT] [--bind IPv4] [--data-dir DIR]\n", argv[0]);
             puts("Defaults: 8080, 127.0.0.1. Use Ctrl-C to stop.");
             puts("One shared game; no TLS or accounts. Do not expose to the Internet.");
             return 0;
@@ -45,6 +49,8 @@ int main(int argc, char **argv)
         }
         if (strcmp(argv[i], "--bind") == 0 && i + 1 < argc) {
             bind_addr = argv[++i];
+        } else if (strcmp(argv[i], "--data-dir") == 0 && i + 1 < argc) {
+            data_dir = argv[++i];
         } else {
             char *end;
             long value;
@@ -57,6 +63,25 @@ int main(int argc, char **argv)
             }
             port = (int)value;
             have_port = 1;
+        }
+    }
+
+    if (data_dir == NULL) {
+        const char *home = getenv("HOME");
+        if (home == NULL || !home[0] ||
+            snprintf(default_dir, sizeof(default_dir), "%s/.super_rocket_web", home) >= (int)sizeof(default_dir)) {
+            fputs("super-rocket-web: set HOME or specify --data-dir DIR\n", stderr);
+            return 2;
+        }
+        data_dir = default_dir;
+    }
+    {
+        struct stat st;
+        if (storage_set_directory(data_dir) != 0 ||
+            (mkdir(data_dir, 0700) != 0 && errno != EEXIST) ||
+            stat(data_dir, &st) != 0 || !S_ISDIR(st.st_mode)) {
+            fprintf(stderr, "super-rocket-web: cannot use save directory '%s'\n", data_dir);
+            return 1;
         }
     }
 

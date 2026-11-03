@@ -17,6 +17,10 @@ class WebIntegration(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.home = tempfile.TemporaryDirectory(prefix="rocket-web-tests-")
+        cls.start_server()
+
+    @classmethod
+    def start_server(cls):
         with socket.socket() as probe:
             probe.bind(("127.0.0.1", 0))
             cls.port = probe.getsockname()[1]
@@ -40,9 +44,13 @@ class WebIntegration(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
+        cls.stop_server()
+        cls.home.cleanup()
+
+    @classmethod
+    def stop_server(cls):
         cls.process.send_signal(signal.SIGTERM)
         out, err = cls.process.communicate(timeout=5)
-        cls.home.cleanup()
         if cls.process.returncode != 0 or b"ERROR:" in err or b"runtime error:" in err:
             raise AssertionError((cls.process.returncode, out, err))
 
@@ -139,11 +147,50 @@ class WebIntegration(unittest.TestCase):
         for args in (["0"], ["65536"], ["-1"], ["abc"], ["--bind"], ["--bind", "invalid"],
                      ["8080", "8081"], [str(self.port)]):
             with self.subTest(args=args):
-                result = subprocess.run([BINARY] + args, capture_output=True, timeout=3)
+                result = subprocess.run([BINARY] + args, capture_output=True, timeout=3,
+                                        env=dict(os.environ, HOME=self.home.name))
                 self.assertNotEqual(result.returncode, 0)
         result = subprocess.run([BINARY, "--version"], capture_output=True, timeout=3)
         self.assertEqual(result.returncode, 0)
         self.assertIn(b"1.0.0", result.stdout)
+
+    def test_persistent_shared_saves_and_terminal_isolation(self):
+        cls = type(self)
+        cls.stop_server()
+        native = Path(self.home.name) / ".super_rocket_scores"
+        native.write_text("999\n888\n777\n")
+        data = Path(self.home.name) / ".super_rocket_web"
+        config = data / ".super_rocket_config"
+        config.write_text("1\n0\n1\n")
+        scores = data / ".super_rocket_scores"
+        scores.write_text("123\n456\n789\n")
+        leaderboard = data / ".super_rocket_leaderboard"
+        leaderboard.write_text("ALX 12345 1\n")
+        cls.start_server()
+        # Both a fresh HTTP client and a reload see the same saved game/theme.
+        self.assertIn(b"#FFFF55", self.get("/frame"))
+        self.assertIn(b"#FFFF55", self.get("/frame"))
+        self.get("/key?t=" + cls.token + "&d=84")  # T -> mono
+        self.get("/key?t=" + cls.token + "&u=84")
+        deadline = time.monotonic() + 2
+        while config.read_text().splitlines()[0] != "2" and time.monotonic() < deadline:
+            time.sleep(0.02)
+        self.assertEqual(config.read_text().splitlines()[0], "2")
+        cls.stop_server()
+        cls.start_server()
+        self.assertIn(b"#FFFFFF", self.get("/frame"))
+        self.assertEqual(scores.read_text(), "123\n456\n789\n")
+        self.assertEqual(leaderboard.read_text(), "ALX 12345 1\n")
+        self.assertEqual(native.read_text(), "999\n888\n777\n")
+
+    def test_save_directory_errors(self):
+        for directory in ("", "/nonexistent/parent/rocket-saves", "x" * 1000):
+            result = subprocess.run([BINARY, "--data-dir", directory], capture_output=True, timeout=3)
+            self.assertNotEqual(result.returncode, 0)
+        env = dict(os.environ)
+        env.pop("HOME", None)
+        result = subprocess.run([BINARY], env=env, capture_output=True, timeout=3)
+        self.assertNotEqual(result.returncode, 0)
 
 
 if __name__ == "__main__":
