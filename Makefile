@@ -36,6 +36,9 @@ wasm:
 wasm-test:
 	python3 tools/build_wasm.py --emcc "$(EMCC)" --test --out dist/wasm-test
 
+package-wasm:
+	python3 tools/package_wasm.py dist/wasm dist/wasm-package
+
 tests/wasm_parity: tests/wasm_parity.c src/wasm_main.c src/app.c src/game.c src/render.c src/keys.c src/rng.c src/util.c src/theme.c src/storage.c $(HDR)
 	$(CC) $(CFLAGS) -DROCKET_TEST -Isrc -o $@ $(filter %.c,$^) $(LDLIBS)
 
@@ -46,6 +49,8 @@ test-wasm-build:
 
 test-wasm-artifacts:
 	python3 tests/test_wasm_artifacts.py dist/wasm
+	python3 tests/test_wasm_package.py
+	python3 tests/test_wasm_static.py
 
 test-wasm: tests/wasm_parity
 	node tests/test_wasm_browser.cjs dist/wasm-test $(BROWSER)
@@ -106,9 +111,10 @@ clean:
 	rm -f tests/run_tests_san tests/run_web_tests_san tests/super-rocket-web-san
 	rm -rf tests/run_tests.dSYM
 	rm -f dist/wasm/rocket.js dist/wasm/rocket.wasm dist/wasm/index.html dist/wasm/client.js dist/wasm/platform.js dist/wasm/storage.js dist/wasm/manifest.json
+	rm -rf dist/wasm-package dist/wasm-test
 	rm -f tests/wasm_parity
 
 run: $(BIN)
 	./$(BIN)
 
-.PHONY: all web wasm wasm-test clean run test test-web test-wasm-build test-wasm test-wasm-artifacts test-sanitize check-version
+.PHONY: all web wasm wasm-test package-wasm clean run test test-web test-wasm-build test-wasm test-wasm-artifacts test-sanitize check-version

@@ -42,11 +42,12 @@ def build(emcc, out, testing=False):
     ], cwd=ROOT, check=True)
     for name in ("index.html", "client.js", "platform.js", "storage.js"):
         shutil.copyfile(ROOT / "wasm" / name, out / name)
-    total = sum(p.stat().st_size for p in out.iterdir() if p.is_file())
+    generated = [p for p in out.iterdir() if p.is_file() and p.name != 'manifest.json']
+    total = sum(p.stat().st_size for p in generated)
     manifest = {'schema': 1, 'total_bytes': total, 'files': {p.name: {
         'bytes': p.stat().st_size,
         'sha256': hashlib.sha256(p.read_bytes()).hexdigest()
-    } for p in sorted(out.iterdir()) if p.is_file() and p.name != 'manifest.json'}}
+    } for p in sorted(generated)}}
     (out / 'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
     print(f"Static WASM package: {total:,} bytes in {out}")
 

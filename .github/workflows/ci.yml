@@ -19,8 +19,11 @@ jobs:
         run: |
           make wasm wasm-test EMCC="docker run --rm -v $PWD:/src -w /src emscripten/emsdk:4.0.21 emcc"
           make tests/wasm_parity test-wasm-build
+          make package-wasm
           python3 tests/test_wasm_artifacts.py dist/wasm
           python3 tests/test_wasm_artifacts.py dist/wasm-test
+          python3 tests/test_wasm_artifacts.py dist/wasm-package
+          python3 tests/test_wasm_static.py
       - name: WASM browser controls and native parity
         timeout-minutes: 10
         run: |
