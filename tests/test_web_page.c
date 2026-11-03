@@ -18,7 +18,7 @@ void test_web_page(void)
     CHECK(strstr(out, "AB\nCD</TEXTAREA>") != NULL);
     CHECK(strstr(out, "TEXT=\"#FFFFFF\"") != NULL);
     CHECK(strstr(out, "BGCOLOR=\"#000000\"") != NULL);
-    CHECK(strstr(out, "<FORM>") != NULL);
+    CHECK(strstr(out, "<FORM ACTION=\"/play\">") != NULL);
     CHECK((int)strlen(out) == n);
 
     /* the frame may contain spaces and be a single row */
