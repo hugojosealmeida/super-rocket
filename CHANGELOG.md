@@ -22,6 +22,9 @@ All notable changes to super-rocket are documented here.
 - Browser play now uses a white page with a black, fixed 80×23 monospace game
   panel. Per-character terminal colors and all three themes are preserved using
   the C renderer's color buffer and legacy PRE/FONT markup instead of a textarea.
+- Browser frame refresh now targets the terminal's 30 Hz render cadence in both
+  the C-server page and local WebAssembly frontend, including identical adjacent
+  frames; network timing can still make server-hosted refresh less exact.
 
 ### Fixed
 - Leaderboard initials can contain shortcut letters such as H, I, T and P

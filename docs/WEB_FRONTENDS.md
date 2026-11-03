@@ -51,8 +51,9 @@ Browser-specific behavior:
   BEL notifications; most browsers remain silent, which is supported.
 - The page is white with a black, fixed 80×23 monospace game panel. Character
   positions and per-cell colors come from the same C renderer as the terminal.
-- Screen updates arrive at about 10 Hz while the C simulation runs at 30 Hz.
-  Use local or trusted-LAN play; Internet latency affects controls.
+- Screen updates target about 30 Hz, matching the C simulation and terminal
+  refresh cadence. Network latency and browser scheduling still affect the
+  C-server page, so use local or trusted-LAN play.
 - Enable frames and JavaScript. If the screen stays at “Connecting”, check the
   server and browser settings. Widen a narrow window to see all 80 columns.
 
@@ -87,7 +88,8 @@ releases are **unverified**, not supported promises. See the
 
 This is a third frontend for static hosting. The visitor's browser runs the
 compiled C game locally, so every page has its own rocket and key presses do not
-go to a server. The terminal and C-server versions remain available.
+go to a server. The terminal and C-server versions remain available at
+[GitHub](https://github.com/hugojosealmeida/super-rocket).
 
 ```sh
 make wasm EMCC="docker run --rm -v $PWD:/src -w /src emscripten/emsdk:4.0.21 emcc"

@@ -282,7 +282,7 @@ int web_update_document(char *out, size_t size, const char *chars,
         "<SCRIPT LANGUAGE=\"JavaScript\">\n<!--\n"
         "function update() {\n"
         "  var p = parent.frames[0];\n"
-        "  if (!p || !p.gameScreen || !p.gameScreen()) { setTimeout(\"location.replace('/frame')\", 100); return; }\n");
+        "  if (!p || !p.gameScreen || !p.gameScreen()) { setTimeout(\"location.replace('/frame')\", 33); return; }\n");
     put(&w, "  p.lastFrame = (new Date()).getTime();\n");
     if (changed) {
         n = frame_markup(markup, sizeof(markup), chars, colors, width, height);
@@ -308,7 +308,7 @@ int web_update_document(char *out, size_t size, const char *chars,
     if (beep)
         put(&w, "  p.gameScreen().innerHTML += '\\x07';\n");
     snprintf(tail, sizeof(tail),
-        "  setTimeout(\"location.replace('/frame?v=%lu&r=\" + Math.random() + \"')\", 100);\n"
+        "  setTimeout(\"location.replace('/frame?v=%lu&r=\" + Math.random() + \"')\", 33);\n"
         "}\nupdate();\n// -->\n</SCRIPT></BODY></HTML>\n", version);
     put(&w, tail);
     return w.ok ? (int)(w.pos - out) : -1;
