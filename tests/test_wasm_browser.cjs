@@ -32,6 +32,14 @@ const { execFileSync } = require('node:child_process');
     await page.goto(base);
     await page.waitForFunction(() => document.getElementById('status').textContent.includes('C module ready'));
     assert.match(await page.locator('#status').textContent(), /1\.1\.0/);
+    const screen = page.locator('#screen');
+    const grid = (await screen.textContent()).split('\n');
+    assert.equal(grid.length, 23);
+    assert.ok(grid.every(line => line.length === 80));
+    assert.equal(await screen.evaluate(el => getComputedStyle(el.closest('table')).backgroundColor), 'rgb(0, 0, 0)');
+    assert.equal(await page.evaluate(() => getComputedStyle(document.body).backgroundColor), 'rgb(255, 255, 255)');
+    assert.ok((await screen.locator('font').count()) > 1);
+    assert.match(await screen.evaluate(el => getComputedStyle(el).fontFamily), /Courier/);
     const state = await page.evaluate(async () => {
       const module = await createRocketModule();
       if (!module._rocket_snapshot) return null; // Inspection exists only in test builds.
@@ -57,7 +65,22 @@ const { execFileSync } = require('node:child_process');
       module._rocket_key(80, 1); module._rocket_tick();
       const resumed = snapshot();
       module._rocket_init(123);
-      return { played, paused, stillPaused, independent, invalid, resumed, reset: snapshot() };
+      const screens = [];
+      const testScreen = document.createElement('pre');
+      document.body.appendChild(testScreen);
+      for (let state = 0; state <= 6; state++) {
+        module._rocket_test_state(state);
+        RocketPlatform.draw(module, testScreen, -1);
+        screens.push(testScreen.textContent);
+      }
+      module._rocket_init(123);
+      RocketPlatform.draw(module, testScreen, -1);
+      const classic = [...testScreen.querySelectorAll('font')].map(font => font.color);
+      module._rocket_key(84, 1); module._rocket_tick(); module._rocket_key(84, 0);
+      RocketPlatform.draw(module, testScreen, -1);
+      const amber = [...testScreen.querySelectorAll('font')].map(font => font.color);
+      testScreen.remove();
+      return { played, paused, stillPaused, independent, invalid, resumed, reset: snapshot(), screens, classic, amber };
     });
     if (state) {
       const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'rocket-parity-'));
@@ -72,6 +95,9 @@ const { execFileSync } = require('node:child_process');
       assert.equal(state.independent.state, 0);
       assert.equal(state.reset.time, 0);
       assert.equal(state.invalid, 0);
+      assert.notDeepEqual(state.amber, state.classic);
+      for (const [i, expected] of ['lift off', 'EARTH', 'PAUSED', 'MARS ORBIT ACHIEVED', 'MISSION FAILED', 'SECTOR CLEARED', 'INITIALS'].entries())
+        assert.ok(state.screens[i].includes(expected), 'C game screen ' + i);
     }
     const wasm = await page.request.get(base + 'rocket.wasm');
     assert.equal(wasm.headers()['content-type'], 'application/wasm');

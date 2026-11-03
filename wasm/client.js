@@ -11,11 +11,14 @@
         if (window.crypto && window.crypto.getRandomValues) window.crypto.getRandomValues(seed);
         else seed[0] = Date.now() >>> 0;
         module._rocket_init(seed[0]);
+        const screen = document.getElementById('screen');
+        let drawn = RocketPlatform.draw(module, screen, -1);
         const clock = RocketPlatform.clock();
         function frame(now) {
             if (!document.hidden) {
                 const count = clock.advance(now / 1000);
                 for (let i = 0; i < count; i++) module._rocket_tick();
+                drawn = RocketPlatform.draw(module, screen, drawn);
             }
             requestAnimationFrame(frame);
         }

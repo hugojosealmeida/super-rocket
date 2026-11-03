@@ -104,6 +104,14 @@ void term_draw(const char *chars, const unsigned char *colors, int width, int he
 }
 
 #ifdef ROCKET_TEST
+void rocket_test_state(int state)
+{
+    if (state >= GAME_MENU && state <= GAME_INITIALS) {
+        game.state = (GameState)state;
+        render_frame(&game);
+    }
+}
+
 const char *rocket_snapshot(void)
 {
     static char result[512];
