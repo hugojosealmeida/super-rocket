@@ -1,10 +1,10 @@
 # Retro frontend compatibility
 
 The page uses **1990s web techniques**, not a modern JavaScript game engine:
-HTML 3.2-era forms/tables, frame navigation, image requests and small scripts.
+HTML 3.2-era forms/tables/PRE/FONT, frame navigation, image requests and small scripts.
 All simulation, scoring, physics and rendering logic runs in C on the server.
 
-Frames, `onkeydown`/`onkeyup`, and event capture are period browser extensions,
+Frames, `onkeydown`/`onkeyup`, event capture, SPAN/ID and `innerHTML` updates are period browser extensions,
 not part of the HTML 3.2 DTD. Pure HTML 1.0 cannot run this keyboard interface.
 The standalone `web/index.html` launch guide uses HTML 3.2 markup. No CSS,
 canvas, fetch, XHR, WebSockets, WebAssembly, audio API or plugin is required.
@@ -80,8 +80,10 @@ test network; do not use it to visit arbitrary Internet sites.
 
 - Screen snapshots poll at approximately 10 Hz; the C simulation runs at 30 Hz.
   Network latency is visible; this is intended for local/trusted-LAN play.
-- Textareas have browser-controlled colors. The theme changes surrounding page
-  text; per-cell colors remain a terminal-only feature.
+- The game is a black 80×23 monospace panel on a white page. The C renderer's
+  color buffer is converted to per-run FONT colors inside PRE, preserving spaces,
+  line breaks and theme changes. ANSI codes map to a fixed RGB palette; an
+  individually customized terminal profile or font can still look different.
 - Sound uses optional ASCII BEL. Most browsers stay silent, even with M on.
 - One server is one shared game/save record; there are no player accounts.
 - A server restart generates a new control token. Reload existing pages after

@@ -15,12 +15,11 @@
 #include "http.h"
 #include "keys.h"
 #include "term.h"
-#include "theme.h"
 #include "web_page.h"
 #include "web_term.h"
 
 #define MAX_CLIENTS 16
-#define OUT_LIMIT 32768
+#define OUT_LIMIT (WEB_PAGE_CAPACITY + 1024)
 #define READ_TIMEOUT 5.0
 #define WRITE_TIMEOUT 5.0
 
@@ -76,7 +75,7 @@ static int parse_code(const char *text, int *code)
 int web_respond(const char *head, size_t len, char *out, size_t size, int *streaming)
 {
     HttpRequest req;
-    char page[24000];
+    char page[WEB_PAGE_CAPACITY];
     int n;
     int rc = http_parse_request(head, len, &req);
     *streaming = 0; /* Reserved; refresh now uses hidden-frame polling. */
@@ -109,9 +108,8 @@ int web_respond(const char *head, size_t len, char *out, size_t size, int *strea
             changed = http_query_get(req.query, "v", requested, sizeof(requested)) != 1 ||
                 strcmp(previous, requested) != 0;
         }
-        (void)colors;
-        n = web_update_document(page, sizeof(page), chars, width, height, version,
-                                changed, theme_color(THEME_TITLE), web_term_take_beep());
+        n = web_update_document(page, sizeof(page), chars, colors, width, height, version,
+                                changed, web_term_take_beep());
     } else if (strcmp(req.path, "/key") == 0) {
         /* A random per-server capability prevents other websites sending keys. */
         char token[40];

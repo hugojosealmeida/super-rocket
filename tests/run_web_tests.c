@@ -53,19 +53,19 @@ static void test_frame_states(void)
         g.state = cases[i].state;
         render_frame(&g);
         web_term_latest(&chars, &colors, &width, &height, &version);
-        CHECK(web_frame_document(document, sizeof(document), chars, width, height, 97) > 0);
+        CHECK(web_frame_document(document, sizeof(document), chars, colors, width, height) > 0);
         CHECK(strstr(document, cases[i].expected) != NULL);
         CHECK(strchr(document, '\033') == NULL); /* never emit terminal escapes */
     }
     g.show_help = 1;
     render_frame(&g);
     web_term_latest(&chars, &colors, &width, &height, &version);
-    CHECK(web_frame_document(document, sizeof(document), chars, width, height, 97) > 0);
+    CHECK(web_frame_document(document, sizeof(document), chars, colors, width, height) > 0);
     CHECK(strstr(document, "H O W   T O   F L Y") != NULL);
     g.show_help = 0; g.show_scores = 1;
     render_frame(&g);
     web_term_latest(&chars, &colors, &width, &height, &version);
-    CHECK(web_frame_document(document, sizeof(document), chars, width, height, 97) > 0);
+    CHECK(web_frame_document(document, sizeof(document), chars, colors, width, height) > 0);
     CHECK(strstr(document, "T O P   P I L O T S") != NULL);
     g.show_scores = 0;
     for (i = 0; i < 3; i++) {
@@ -183,13 +183,13 @@ int main(void)
         CHECK(term_time() >= before);
     }
 
-    CHECK(web_update_document(out, sizeof(out), "</script>\\\"\n", 12, 1, 3, 1, 97, 0) > 0);
-    CHECK(strstr(out, "\\x3c/script\\x3e") != NULL);
-    CHECK(web_update_document(out, 1, "x", 1, 1, 1, 1, 97, 0) == -1);
-    CHECK(web_update_document(out, sizeof(out), "x", 81, 1, 1, 1, 97, 0) == -1);
-    CHECK(web_update_document(out, sizeof(out), "x", 1, 1, 1, 1, 97, 1) > 0);
+    CHECK(web_update_document(out, sizeof(out), "</script>\\\"\n", (const unsigned char *)"aaaaaaaaaaaa", 12, 1, 3, 1, 0) > 0);
+    CHECK(strstr(out, "\\x26lt;/script\\x26gt;") != NULL);
+    CHECK(web_update_document(out, 1, "x", (const unsigned char *)"a", 1, 1, 1, 1, 0) == -1);
+    CHECK(web_update_document(out, sizeof(out), "x", (const unsigned char *)"a", 81, 1, 1, 1, 0) == -1);
+    CHECK(web_update_document(out, sizeof(out), "x", (const unsigned char *)"a", 1, 1, 1, 1, 1) > 0);
     CHECK(strstr(out, "\\x07") != NULL);
-    CHECK(web_update_document(out, sizeof(out), "x", 1, 1, 1, 1, 97, 0) > 0);
+    CHECK(web_update_document(out, sizeof(out), "x", (const unsigned char *)"a", 1, 1, 1, 1, 0) > 0);
     CHECK(strstr(out, "\\x07") == NULL);
     /* A fixed simulation clock is independent of the browser display cadence. */
     {
@@ -213,6 +213,20 @@ int main(void)
     }
     CHECK(web_play_document(out, sizeof(out), "'\"</script>") == -1);
     CHECK(web_index_document(out, 8) == -1);
+    {
+        char response[WEB_PAGE_CAPACITY + 1024];
+        char cells[80 * 23];
+        unsigned char palette[80 * 23];
+        size_t i;
+        memset(cells, '"', sizeof(cells));
+        for (i = 0; i < sizeof(palette); i++)
+            palette[i] = i % 2 ? 91 : 92;
+        term_draw(cells, palette, 80, 23);
+        CHECK(request("/frame", response, sizeof(response)) > 0);
+        CHECK(strstr(response, "200 OK") != NULL);
+        CHECK(strstr(response, "#FF5555") != NULL);
+        CHECK(strstr(response, "#55FF55") != NULL);
+    }
     test_frame_states();
     web_server_shutdown(fd);
     /* Startup/shutdown must not close stdin, including the zero-initialized slots. */

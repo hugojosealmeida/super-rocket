@@ -108,7 +108,7 @@ the C program `super-rocket-web` (`make web`). The terminal build is unchanged.
 browser (HTML 3.2 page)                     super-rocket-web (C)
 -----------------------                     -----------------------------
 GET /                  ----------------->   page (src/web_page.c)
-GET /play              ----------------->   stable keyboard/textarea page
+GET /play              ----------------->   stable keyboard/colored PRE page
 GET /frame?v=N         ----------------->   hidden-frame snapshot update,
                                             only changed screen content
 JS onkeydown / onkeyup
@@ -124,7 +124,7 @@ GET /key?clear=1       ----------------->   window lost focus, release all
   small ES3-syntax snippet, which forwards key presses. Browsers cannot
   read the keyboard without scripting, so this snippet is required.
 - **Screen refresh.** A hidden frame polls every 100 ms and copies changed
-  text into the visible page's textarea. Physics still runs at 30 ticks per
+  colored HTML into the visible page's fixed monospace panel. Physics still runs at 30 ticks per
   second. This replaces the initial server-push proposal: reloading the keyboard
   document would discard held-key state and focus. No fetch, XHR, canvas or
   WebAssembly is used. Frames are a period browser extension, not HTML 3.2
@@ -132,10 +132,13 @@ GET /key?clear=1       ----------------->   window lost focus, release all
   The live page is embedded in the C binary, avoiding runtime asset paths and
   arbitrary file serving. `web/index.html` is a standalone HTML 3.2 launch guide,
   not a client-only game. The server works from any working directory.
-  Textareas have one browser-controlled text color; per-cell terminal colors
-  cannot be reproduced without CSS or a richer renderer. Theme selection is
-  preserved in the C game and updates the surrounding page text. Native play
-  retains all per-cell colors.
+  The page background is white, and a black table cell frames the game. PRE
+  preserves the exact 80×23 character grid; a fixed Courier font and per-run
+  FONT colors preserve terminal layout and the C renderer's color buffer.
+  Only adjacent cells with the same color are grouped. The C server HTML-escapes
+  characters, then JavaScript-string-escapes the markup for transport. The
+  stable SPAN's innerHTML is updated without replacing the keyboard document.
+  Buffer limits cover the worst case of a color change on every cell.
 - **Keyboard.** Key presses are sent as image requests (`new Image().src`), so
   the page never navigates away from the game. The server answers with a tiny
   GIF. Image requests are retained and serialized so key-up cannot overtake
@@ -148,7 +151,7 @@ GET /key?clear=1       ----------------->   window lost focus, release all
   per second, independently of browser polling or monitor refresh. Short stalls
   catch up; a long suspend discards excess backlog. Sound starts off on every
   server launch. M toggles the game preference; sound events deliver ASCII BEL
-  to the textarea, a best-effort legacy notification. Most browsers remain
+  to the game panel, a best-effort legacy notification. Most browsers remain
   silent. No plugin or audio API is required and silence is a supported outcome.
 - **One game per server.** The server runs one shared game. Every connected
   browser sees the same screen, and key presses from any browser control it.

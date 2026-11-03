@@ -29,7 +29,6 @@ static const ColorEntry colors[] = {
 };
 
 #define DEFAULT_TEXT "#FFFFFF"
-#define HEAD_MAX 2048
 
 /*
  * Forwards key presses to the server with image requests, so the page never
@@ -47,6 +46,11 @@ static const char key_script[] =
     "}\n"
     "var held = new Array(), queue = new Array(), busy = false, image = null;\n"
     "var lastFrame = (new Date()).getTime();\n"
+    "function gameScreen() {\n"
+    "  if (document.getElementById) return document.getElementById('screen');\n"
+    "  if (document.all) return document.all.screen;\n"
+    "  return null;\n"
+    "}\n"
     "function pump() {\n"
     "  if (busy || queue.length == 0) return;\n"
     "  busy = true; image = new Image();\n"
@@ -171,42 +175,52 @@ int web_index_document(char *out, size_t size)
     return (int)sizeof(index) - 1;
 }
 
-int web_frame_document(char *out, size_t size, const char *chars, int width, int height,
-                       unsigned char text_color)
+static int frame_markup(char *out, size_t size, const char *chars,
+                         const unsigned char *colors, int width, int height)
 {
     Writer w;
-    char head[HEAD_MAX];
-    int x;
-    int y;
-
-    if (width <= 0 || height <= 0 || width > 80 || height > 23 || size == 0)
+    int x, y;
+    const char *current = NULL;
+    if (width <= 0 || height <= 0 || width > 80 || height > 23 || size == 0 ||
+        chars == NULL || colors == NULL)
         return -1;
-
-    if (snprintf(head, sizeof(head),
-                 "<HTML>\n<HEAD>\n<TITLE>super-rocket</TITLE>\n</HEAD>\n"
-                 "<BODY BGCOLOR=\"#000000\" TEXT=\"%s\">\n"
-                 "<FORM ACTION=\"/play\">\n<TEXTAREA NAME=\"screen\" COLS=%d ROWS=%d WRAP=OFF "
-                 "onfocus=\"this.blur()\">",
-                 web_html_color(text_color), width, height) >= (int)sizeof(head))
-        return -1;
-
-    w.pos = out;
-    w.left = size;
-    w.ok = 1;
-    out[0] = '\0';
-
-    put(&w, head);
+    w.pos = out; w.left = size; w.ok = 1; out[0] = '\0';
     for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++)
-            put_escaped(&w, chars[y * width + x]);
+        for (x = 0; x < width; x++) {
+            int i = y * width + x;
+            const char *color = web_html_color(colors[i]);
+            if (current == NULL || strcmp(current, color) != 0) {
+                if (current != NULL)
+                    put(&w, "</FONT>");
+                put(&w, "<FONT COLOR=\"");
+                put(&w, color);
+                put(&w, "\">");
+                current = color;
+            }
+            put_escaped(&w, chars[i]);
+        }
         if (y + 1 < height)
             put_char(&w, '\n');
     }
-    put(&w, "</TEXTAREA>\n</FORM>\n</BODY>\n</HTML>\n");
+    put(&w, "</FONT>");
+    return w.ok ? (int)(w.pos - out) : -1;
+}
 
-    if (!w.ok)
+int web_frame_document(char *out, size_t size, const char *chars,
+                       const unsigned char *colors, int width, int height)
+{
+    Writer w;
+    char markup[65536];
+    if (size == 0 || frame_markup(markup, sizeof(markup), chars, colors, width, height) < 0)
         return -1;
-    return (int)(w.pos - out);
+    w.pos = out; w.left = size; w.ok = 1; out[0] = '\0';
+    put(&w, "<HTML><HEAD><TITLE>super-rocket</TITLE></HEAD>"
+        "<BODY BGCOLOR=\"#FFFFFF\" TEXT=\"#000000\"><CENTER>"
+        "<TABLE BGCOLOR=\"#000000\" BORDER=0 CELLPADDING=8 CELLSPACING=0>"
+        "<TR><TD NOWRAP><PRE><FONT FACE=\"Courier New, Courier, monospace\" SIZE=3>");
+    put(&w, markup);
+    put(&w, "</FONT></PRE></TD></TR></TABLE></CENTER></BODY></HTML>\n");
+    return w.ok ? (int)(w.pos - out) : -1;
 }
 
 int web_play_document(char *out, size_t size, const char *token)
@@ -228,15 +242,16 @@ int web_play_document(char *out, size_t size, const char *token)
     put(&w, token);
     put(&w, "\";</SCRIPT>\n");
     put(&w, key_script);
-    put(&w, "</HEAD><BODY BGCOLOR=\"#000000\" TEXT=\"#55FFFF\">"
+    put(&w, "</HEAD><BODY BGCOLOR=\"#FFFFFF\" TEXT=\"#000000\">"
         "<CENTER><H1>SUPER ROCKET</H1><P>EARTH -&gt; MARS</P>"
         "<P>Click this page, then press Enter to launch. JavaScript must be enabled.</P>"
         "<FORM ACTION=\"/play\"><P><INPUT TYPE=TEXT NAME=\"connection\" SIZE=74 "
-        "VALUE=\"Waiting for frames. Enable JavaScript; keep the C server running.\"></P>"
-        "<TEXTAREA NAME=\"screen\" COLS=80 ROWS=23 "
-        "onkeydown=\"return keyDown(event)\" onkeyup=\"return keyUp(event)\">"
+        "VALUE=\"Waiting for frames. Enable JavaScript; keep the C server running.\"></P></FORM>"
+        "<TABLE BGCOLOR=\"#000000\" BORDER=0 CELLPADDING=8 CELLSPACING=0>"
+        "<TR><TD NOWRAP><PRE><FONT FACE=\"Courier New, Courier, monospace\" SIZE=3 COLOR=\"#FFFFFF\">"
+        "<SPAN ID=\"screen\">"
         "Connecting to the C game server... If this stays visible, frames or JavaScript may be disabled."
-        "</TEXTAREA></FORM>"
+        "</SPAN></FONT></PRE></TD></TR></TABLE>"
         "<TABLE BORDER=1><CAPTION>Keyboard controls</CAPTION>"
         "<TR><TH>Key</TH><TH>Action</TH></TR>"
         "<TR><TD>Arrows / WASD</TD><TD>Thrust</TD></TR>"
@@ -251,13 +266,15 @@ int web_play_document(char *out, size_t size, const char *token)
     return w.ok ? (int)(w.pos - out) : -1;
 }
 
-int web_update_document(char *out, size_t size, const char *chars, int width,
+int web_update_document(char *out, size_t size, const char *chars,
+                        const unsigned char *colors, int width,
                         int height, unsigned long version, int changed,
-                        unsigned char text_color, int beep)
+                        int beep)
 {
     Writer w;
     char tail[1024];
-    int x, y;
+    char markup[65536];
+    int i, n = 0;
     if (size == 0 || width < 0 || height < 0 || width > 80 || height > 23)
         return -1;
     w.pos = out; w.left = size; w.ok = 1; out[0] = '\0';
@@ -265,34 +282,34 @@ int web_update_document(char *out, size_t size, const char *chars, int width,
         "<SCRIPT LANGUAGE=\"JavaScript\">\n<!--\n"
         "function update() {\n"
         "  var p = parent.frames[0];\n"
-        "  if (!p || !p.document.forms[0]) { location.replace('/frame'); return; }\n");
+        "  if (!p || !p.gameScreen || !p.gameScreen()) { setTimeout(\"location.replace('/frame')\", 100); return; }\n");
     put(&w, "  p.lastFrame = (new Date()).getTime();\n");
     if (changed) {
-        put(&w, "  p.document.forms[0].screen.value = \"");
-        for (y = 0; y < height; y++) {
-            for (x = 0; x < width; x++) {
-                unsigned char c = (unsigned char)chars[y * width + x];
-                if (c == '"' || c == '\\') {
-                    put_char(&w, '\\'); put_char(&w, (char)c);
-                } else if (c == '<' || c == '>' || c == '&' || c < 32 || c > 126) {
-                    char escaped[8];
-                    snprintf(escaped, sizeof(escaped), "\\x%02x", c);
-                    put(&w, escaped);
-                } else {
-                    put_char(&w, (char)c);
-                }
-            }
-            if (y + 1 < height)
+        n = frame_markup(markup, sizeof(markup), chars, colors, width, height);
+        if (n < 0)
+            return -1;
+        put(&w, "  p.gameScreen().innerHTML = \"");
+        for (i = 0; i < n; i++) {
+            unsigned char c = (unsigned char)markup[i];
+            if (c == '"' || c == '\\') {
+                put_char(&w, '\\'); put_char(&w, (char)c);
+            } else if (c == '\n') {
                 put(&w, "\\n");
+            } else if (c == '<' || c == '>' || c == '&' || c < 32 || c > 126) {
+                char escaped[8];
+                snprintf(escaped, sizeof(escaped), "\\x%02x", c);
+                put(&w, escaped);
+            } else {
+                put_char(&w, (char)c);
+            }
         }
         put(&w, "\";\n");
     }
     if (beep)
-        put(&w, "  p.document.forms[0].screen.value += '\\x07';\n");
+        put(&w, "  p.gameScreen().innerHTML += '\\x07';\n");
     snprintf(tail, sizeof(tail),
-        "  p.document.fgColor = '%s';\n"
         "  setTimeout(\"location.replace('/frame?v=%lu&r=\" + Math.random() + \"')\", 100);\n"
-        "}\nupdate();\n// -->\n</SCRIPT></BODY></HTML>\n", web_html_color(text_color), version);
+        "}\nupdate();\n// -->\n</SCRIPT></BODY></HTML>\n", version);
     put(&w, tail);
     return w.ok ? (int)(w.pos - out) : -1;
 }

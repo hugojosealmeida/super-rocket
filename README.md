@@ -69,8 +69,9 @@ The [controls below](#controls) also apply in the browser, with these difference
   shared server. Restart the mission with `R`.
 - Sound starts **off** every time the server starts. `M` enables optional ASCII
   BEL notifications; most browsers remain silent, which is supported.
-- The textarea uses browser-controlled colors; `T` still selects a saved theme
-  and changes surrounding page text. Per-cell colors remain terminal-only.
+- The white page contains a black, fixed 80×23 monospace game panel. Character
+  positions and per-cell colors come directly from the same C renderer as the
+  terminal. `T` changes the whole game palette (classic, amber, mono).
 - Screen updates arrive at about 10 Hz while C simulation runs at 30 Hz.
   Use local or trusted-LAN play; Internet latency will affect controls.
 - Enable frames and JavaScript. If the screen stays at "Connecting", check
