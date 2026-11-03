@@ -40,6 +40,32 @@ const { execFileSync } = require('node:child_process');
     assert.equal(await page.evaluate(() => getComputedStyle(document.body).backgroundColor), 'rgb(255, 255, 255)');
     assert.ok((await screen.locator('font').count()) > 1);
     assert.match(await screen.evaluate(el => getComputedStyle(el).fontFamily), /Courier/);
+    const waitText = text => page.waitForFunction(text => document.getElementById('screen').textContent.includes(text), text);
+    const waitAbsent = text => page.waitForFunction(text => !document.getElementById('screen').textContent.includes(text), text);
+    await screen.click();
+    for (const [key, text] of [['3','> [3]'],['1','> [1]'],['h','H O W   T O   F L Y']]) {
+      await page.keyboard.press(key); await waitText(text);
+    }
+    await page.keyboard.press('h'); await waitAbsent('H O W   T O   F L Y');
+    await page.keyboard.press('i'); await waitText('T O P   P I L O T S');
+    await page.keyboard.press('i'); await waitAbsent('T O P   P I L O T S');
+    await page.keyboard.press('t'); await waitText('theme:amber');
+    await page.keyboard.press('f'); await waitText('fps:on');
+    await page.keyboard.press('x'); await waitText('STATISTICS RESET');
+    await page.keyboard.press('Enter'); await waitText('LEVEL 1');
+    await page.keyboard.down('w'); await page.waitForTimeout(150); await page.keyboard.up('w');
+    await page.keyboard.press('Space');
+    await page.keyboard.down('p'); await waitText('PAUSED');
+    await page.keyboard.down('p'); await page.waitForTimeout(100); await waitText('PAUSED');
+    await page.keyboard.up('p'); await page.keyboard.press('p'); await waitAbsent('PAUSED');
+    await page.evaluate(() => { const input = document.createElement('input'); input.id = 'notes'; document.body.appendChild(input); input.focus(); });
+    await waitText('PAUSED');
+    await page.keyboard.type('pwasd');
+    assert.equal(await page.locator('#notes').inputValue(), 'pwasd', 'unrelated input keeps its keyboard');
+    await screen.click(); await page.keyboard.press('p'); await waitAbsent('PAUSED');
+    await page.keyboard.press('r'); await waitText('LEVEL 1');
+    await page.keyboard.press('q'); await waitText('lift off');
+    await page.keyboard.press('Escape'); await waitText('lift off');
     const state = await page.evaluate(async () => {
       const module = await createRocketModule();
       if (!module._rocket_snapshot) return null; // Inspection exists only in test builds.

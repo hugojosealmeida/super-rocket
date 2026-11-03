@@ -7,6 +7,28 @@ on:
     branches: [ main ]
 
 jobs:
+  wasm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build real production and test modules with the pinned SDK
+        run: |
+          make wasm wasm-test EMCC="docker run --rm -v $PWD:/src -w /src emscripten/emsdk:4.0.21 emcc"
+          make tests/wasm_parity test-wasm-build
+      - name: WASM browser controls and native parity
+        run: |
+          npm install --prefix "$RUNNER_TEMP/rocket-wasm-browser" playwright@1.64.1
+          "$RUNNER_TEMP/rocket-wasm-browser/node_modules/.bin/playwright" install --with-deps chromium firefox webkit
+          export NODE_PATH="$RUNNER_TEMP/rocket-wasm-browser/node_modules"
+          for browser in chromium firefox webkit; do
+            make test-wasm BROWSER="$browser"
+            node tests/test_wasm_browser.cjs dist/wasm "$browser"
+          done
+
   build:
     runs-on: ubuntu-latest
     steps:
