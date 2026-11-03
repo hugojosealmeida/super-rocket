@@ -4,17 +4,22 @@ super-rocket is a small real-time terminal game. The code is split into modules
 so that the simulation, the rendering and the platform layer stay independent.
 
 ```
-main.c  ──>  game.c  ──>  rng.c, util.c, storage.c, term.c (beep)
-   │
-   └──────>  render.c  ──>  theme.c, util.c, term.c (draw)
+main.c / web_main.c ──> app.c ──> game.c / render.c
+                                  │
+                                  └─ term.h interface
+                                     term.c (native) / web_term.c (browser)
 ```
 
 ## Modules
 
 ### main.c
-Owns the frame loop. Reads input through `term_read_input`, dispatches it with
-`handle_input`, advances the simulation with `game_update` and draws with
-`render_frame`. Also parses command line options and seeds the RNG.
+Owns the terminal frame loop, CLI and RNG seeding. Reads input through
+`term_read_input` and delegates actions/frame stepping to `app.c`.
+
+### app.c / app.h
+Shared input dispatch (`app_handle_input`) and simulation/render step
+(`app_step`). Both frontends use the same game actions. Initials entry consumes
+letters before global shortcuts so names can contain H, I, T, P and so on.
 
 ### game.c / game.h
 All simulation state lives in the `Game` struct: player, camera, fuel, hull,
@@ -57,7 +62,8 @@ Small math and formatting helpers shared by game and render: clamp, distance,
 approach, time formatting.
 
 ### storage.c / storage.h
-Resolves file names relative to `$HOME` and reads/writes simple integer lists.
+Resolves file names relative to `$HOME` (or a process-local directory override
+for web saves) and reads/writes simple integer lists.
 Used for scores, settings and statistics. The leaderboard uses its own text
 format.
 
@@ -115,7 +121,7 @@ GET /key?clear=1       ----------------->   window lost focus, release all
 
 - **Language and runtime.** The game logic stays in C. The server is plain C99
   with POSIX sockets and no external libraries. Browsers only run HTML and a
-  small JavaScript 1.1 snippet, which forwards key presses. Old browsers cannot
+  small ES3-syntax snippet, which forwards key presses. Browsers cannot
   read the keyboard without scripting, so this snippet is required.
 - **Screen refresh.** A hidden frame polls every 100 ms and copies changed
   text into the visible page's textarea. Physics still runs at 30 ticks per

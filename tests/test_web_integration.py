@@ -185,6 +185,20 @@ class WebIntegration(unittest.TestCase):
         self.assertEqual(result.returncode, 0)
         self.assertIn(b"1.0.0", result.stdout)
 
+    def test_documented_cli_and_readme_links(self):
+        root = Path(__file__).resolve().parents[1]
+        readme = (root / "README.md").read_text()
+        help_text = subprocess.check_output([BINARY, "--help"]).decode()
+        for option in ("--bind", "--data-dir"):
+            self.assertIn(option, readme)
+            self.assertIn(option, help_text)
+        for target in re.findall(r"\]\(([^)]+)\)", readme):
+            if "://" not in target and not target.startswith("#"):
+                self.assertTrue((root / target.split("#", 1)[0]).exists(), target)
+        self.assertIn("make web", readme)
+        self.assertIn("./super-rocket-web 8080", readme)
+        self.assertIn("make test-sanitize", readme)
+
     def test_persistent_shared_saves_and_terminal_isolation(self):
         cls = type(self)
         cls.stop_server()

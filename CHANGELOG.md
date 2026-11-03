@@ -4,6 +4,15 @@ All notable changes to super-rocket are documented here.
 
 ## Unreleased
 
+### Added
+- Optional C web frontend (`make web`, `./super-rocket-web 8080`) serving a
+  1990s-style HTML page with keyboard play. The terminal build remains available.
+  Both frontends share the C game logic; browser scripts only handle transport
+  and input. Web saves are isolated under `~/.super_rocket_web/`.
+- Bounded, localhost-default HTTP server with request/connection limits,
+  deadlines, random control tokens and held-key expiry.
+- Web unit/socket/browser regressions, ES3 syntax checks and ASan/UBSan CI.
+
 ### Changed
 - `GAME_VERSION` is now `1.0.0`, matching the released `1.0.0 - 2022-03-31`
   section below; `--version` and the menu footer had kept printing `0.9.0`
