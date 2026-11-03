@@ -58,8 +58,11 @@ async function main() {
     const initialColors = await screen.locator('font').evaluateAll(fonts => [...new Set(fonts.map(font => font.color))]);
     assert.ok(initialColors.length > 1, 'per-character terminal colors are present');
     assert.ok(initialColors.includes('#55FFFF'), 'classic cyan preserved');
-    assert.equal(await screen.locator('font[color="#55FFFF"]').first().evaluate(el => getComputedStyle(el).color),
-      'rgb(85, 255, 255)', 'FONT colors are actually rendered, not just present in markup');
+    // Query and inspect atomically: each snapshot replaces the FONT elements.
+    await frame.waitForFunction(() => {
+      const font = document.querySelector('#screen font[color="#55FFFF"]');
+      return font && getComputedStyle(font).color === 'rgb(85, 255, 255)';
+    });
     await screen.click();
     await page.keyboard.press('3');
     await waitText('> [3]');
