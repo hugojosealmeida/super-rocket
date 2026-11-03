@@ -29,5 +29,6 @@ void test_combat(void);
 void test_term(void);
 void test_version(void);
 void test_http(void);
+void test_keys(void);
 
 #endif
