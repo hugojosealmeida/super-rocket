@@ -7,3 +7,4 @@ tests/run_web_tests
 tests/run_tests_san
 tests/run_web_tests_san
 tests/super-rocket-web-san
+.browser-tools/

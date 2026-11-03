@@ -30,7 +30,7 @@ jobs:
 
       - name: Browser control tests
         run: |
-          npm install --prefix "$RUNNER_TEMP/rocket-browser" playwright@1.64.1
+          npm install --prefix "$RUNNER_TEMP/rocket-browser" playwright@1.64.1 acorn@8.15.0
           "$RUNNER_TEMP/rocket-browser/node_modules/.bin/playwright" install --with-deps chromium firefox webkit
           export NODE_PATH="$RUNNER_TEMP/rocket-browser/node_modules"
           node tests/test_web_browser.cjs ./super-rocket-web chromium
