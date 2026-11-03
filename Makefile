@@ -44,6 +44,9 @@ test-wasm-build:
 	node tests/test_wasm_platform.cjs
 	node tests/test_wasm_storage.cjs
 
+test-wasm-artifacts:
+	python3 tests/test_wasm_artifacts.py dist/wasm
+
 test-wasm: tests/wasm_parity
 	node tests/test_wasm_browser.cjs dist/wasm-test $(BROWSER)
 
@@ -102,10 +105,10 @@ clean:
 	rm -f $(BIN) $(TEST_BIN) $(WEB_BIN) $(WEB_TEST_BIN)
 	rm -f tests/run_tests_san tests/run_web_tests_san tests/super-rocket-web-san
 	rm -rf tests/run_tests.dSYM
-	rm -f dist/wasm/rocket.js dist/wasm/rocket.wasm dist/wasm/index.html dist/wasm/client.js dist/wasm/platform.js dist/wasm/storage.js
+	rm -f dist/wasm/rocket.js dist/wasm/rocket.wasm dist/wasm/index.html dist/wasm/client.js dist/wasm/platform.js dist/wasm/storage.js dist/wasm/manifest.json
 	rm -f tests/wasm_parity
 
 run: $(BIN)
 	./$(BIN)
 
-.PHONY: all web wasm wasm-test clean run test test-web test-wasm-build test-wasm test-sanitize check-version
+.PHONY: all web wasm wasm-test clean run test test-web test-wasm-build test-wasm test-wasm-artifacts test-sanitize check-version

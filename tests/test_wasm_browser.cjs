@@ -81,6 +81,11 @@ const { execFileSync } = require('node:child_process');
     await fresh.goto(base);
     await fresh.waitForFunction(() => document.getElementById('screen').textContent.includes('theme:classic'));
     await isolated.close();
+    const secondContext = await browser.newContext();
+    const secondPage = await secondContext.newPage();
+    await secondPage.goto(base);
+    await secondPage.waitForFunction(() => document.getElementById('screen').textContent.includes('theme:classic'));
+    await secondContext.close();
     // Preload all file categories before C initialization, including leaderboard stdio.
     await page.evaluate(() => localStorage.setItem(RocketStorage.key, JSON.stringify({schema:1, files:{
       '.super_rocket_config':'1\n0\n0\n', '.super_rocket_scores':'111\n222\n333\n',
@@ -160,6 +165,8 @@ const { execFileSync } = require('node:child_process');
     assert.equal(wasm.headers()['content-type'], 'application/wasm');
     assert.deepEqual([...((await wasm.body()).subarray(0, 4))], [0, 97, 115, 109]);
     assert.ok(requests.every(url => url.startsWith(base)), 'only same-directory static requests');
+    assert.ok(requests.every(url => !/[\\/]key(?:\?|$)|[\\/]frame(?:\?|$)|[\\/]play(?:\?|$)|leaderboard|api/.test(url)),
+      'no game API or key/frame polling requests');
     assert.deepEqual(errors, []);
     assert.ok((await page.locator('#error-help').textContent()).includes('HTTP'));
     console.log(engine + ': actual WASM bootstrap and nested static hosting PASS');
