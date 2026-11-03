@@ -88,7 +88,8 @@ releases are **unverified**, not supported promises. See the
 
 This is a third frontend for static hosting. The visitor's browser runs the
 compiled C game locally, so every page has its own rocket and key presses do not
-go to a server. The terminal and C-server versions remain available.
+go to a server. The terminal and C-server versions remain available at
+[GitHub](https://github.com/hugojosealmeida/super-rocket).
 
 ```sh
 make wasm EMCC="docker run --rm -v $PWD:/src -w /src emscripten/emsdk:4.0.21 emcc"
